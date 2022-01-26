@@ -1,0 +1,39 @@
+.main {
+font-family: Tahoma, sans-serif;
+font-size:20px;
+}
+
+.chart {
+    //background-color:blue;
+    height:100%;
+    width:100%
+        
+}
+.absolute{
+    position:absolute;
+    
+}
+.camera{
+    position: absolute;
+    width:1000000%;
+    transform-origin: top left;
+}
+node{
+    text-align: center;
+    padding:0.2em;
+    border-radius:0.5em;
+    border: 1px solid black;
+}
+.selected{
+    border: 3px solid cyan;
+}
+body{
+    margin:0;
+    overflow:hidden;
+}
+pre{
+    font-family: Tahoma, sans-serif;
+  white-space: pre-line;
+    padding-right:1em;
+    padding-left:1em;
+}
