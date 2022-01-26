@@ -26,14 +26,30 @@ node{
 }
 .selected{
     border: 3px solid cyan;
+  background-color: rgba(217, 245, 255,1);
+}
+.selection{
+    position: fixed;
+    background-color: rgba(217, 245, 255,0.5);
+    border: dashed 3px rgba(217, 245, 255,0.8);
 }
 body{
     margin:0;
     overflow:hidden;
+  background-image:
+    linear-gradient(to right, lightgray 1px, transparent 1px),
+    linear-gradient(to bottom, lightgray 1px, transparent 1px);
 }
 pre{
     font-family: Tahoma, sans-serif;
   white-space: pre-line;
     padding-right:1em;
     padding-left:1em;
+}
+node:focus{
+  background-color: rgba(0, 0, 0,0);
+}
+
+node:hover {
+  background-color: rgba(217, 245, 255,1);
 }

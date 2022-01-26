@@ -14,7 +14,8 @@ var scale = 1;
 const KeyCode = {
     SHIFT: 16,
     CTRL: 17,
-    Z: 90
+    Z: 90,
+    B: 66
 }
 var mousePos = {
     x: 0,
@@ -48,11 +49,13 @@ function initialize() {
     document.onwheel = zoom;
     repositionElements();
     load();
+    renderGrid();
     render();
 }
 
 function zoom(event) {
     var zoomFactor = 1 - (event.deltaY * 0.001);
+    if(!keyStates[KeyCode.SHIFT]||selected.length==0){
     scale *= zoomFactor;
 
     scale = Math.min(Math.max(0.001, scale), 10);
@@ -73,10 +76,35 @@ function zoom(event) {
 
     //data.camera.position.x+=offset.x/10;
     //data.camera.position.y+=offset.y/10;
+}
+    else{
+        scaleSelected(zoomFactor);
+    }
+    renderGrid();
     shiftElements();
     render();
 }
-
+function scaleSelected(zoomFactor){
+var selectedNodes = [];
+var totX = 0;
+var totY = 0;
+    for(var i = 0;i<selected.length;i++){
+        var node = getNodeById(selected[i]);
+        if(node!=null){
+            selectedNodes.push(node);
+            totX+=node.position.x;
+            totY+=node.position.y;
+           }
+    }
+var averagePos = {x:totX/selectedNodes.length,y:totY/selectedNodes.length};
+for(var i = 0;i<selectedNodes.length;i++){
+    var node = selectedNodes[i];
+           var averageOffset = {x:node.position.x-averagePos.x,y:node.position.y-averagePos.y};
+            var scaledOffset = multiplyVector(averageOffset,zoomFactor);
+            var newPosition = {x:averagePos.x+scaledOffset.x,y:averagePos.y+scaledOffset.y};
+            shiftNode(node,newPosition);
+}
+}
 function keyDown(e) {
 
     keyStates[e.keyCode] = true;
@@ -111,7 +139,6 @@ saves.splice(currentSave+1);
 var saveState = JSON.stringify(data);
 saves.push(saveState);
 currentSave = saves.length-1;
-console.log(JSON.stringify(saves).length);
 }
 
 function undo() {
@@ -127,13 +154,16 @@ function loadSave(){
 data = JSON.parse(saves[currentSave]);
 recreateElements();
 }
+var queueClear = false;
 function click(e){
     var target = e.path[0];
     if(!keyStates[KeyCode.SHIFT]){
-       clearSelection();
+       queueClear = true;
        }
     else{
+if(target.blur!=null){
 target.blur();
+    }
     }
         if(target.tagName=="NODE"){
         selectElement(target);
@@ -142,7 +172,7 @@ target.blur();
 else{
        for(var i = 0;i<selected.length;i++){
 var selectedElement = selected[i];       
-if(selectedElement!=null){
+if(selectedElement.blur!=null){
           selectedElement.blur();
           }
    }
@@ -157,14 +187,26 @@ function clearSelection(){
     }
    selected = []; 
 }
-function selectElement(element){
-if(!selected.includes(element.id)){
-           selected.push(element.id);
+function selectElement(element, mode = -1){
+if(mode==-1){
+   if(!selected.includes(element.id)){
+           mode = 0;
 }
 else{
-    selected.splice(selected.indexOf(element.id),1);
+    mode = 1
 }
+   }
+switch(mode){
+    case 0:
+           if(!selected.includes(element.id)){
+           selected.push(element.id);
+}
+    break
+    case 1:
+    selected.splice(selected.indexOf(element.id),1);
+    break;
 highlightElement(element);
+}
 }
 function highlightElement(element){
     if(selected.includes(element.getAttribute("id"))){
@@ -265,6 +307,13 @@ function shiftElements() {
         nodeEle.style.left = screenPos.x + "px";
         nodeEle.style.top = screenPos.y + "px";
     }
+}
+function shiftNode(node,pos){
+    node.position = pos;
+    var ele = document.getElementById(node.id);
+    var screenPos = worldToScreenPos(node.position);
+        ele.style.left = screenPos.x + "px";
+        ele.style.top = screenPos.y + "px";
 }
 
 function generateUUID() {
@@ -474,7 +523,25 @@ function countNodes(nodes) {
     }
     return nodeCount;
 }
-
+var nodeCache = [];
+function selectElementBox(origin,end){
+var worldOrigin = screenToWorldPos(origin);
+var worldEnd = screenToWorldPos(end);
+    for(var i = 0;i<nodeCache.length;i++){
+        var node = nodeCache[i];
+        var pos = node.position;
+        if(pos.x>=worldOrigin.x&&pos.x<worldEnd.x&&pos.y>=worldOrigin.y&&pos.y<worldEnd.y){
+            var element = document.getElementById(node.id);
+            if(element!=null){
+           selectElement(element,0);
+                highlightElement(element);
+        }
+           }
+    }
+}
+var startSelectPos = {x:0,y:0};
+var endSelectPos = {x:0,y:0};
+var selecting = false;
 function dragElement(elmnt) {
     var pos1 = 0,
         pos2 = 0,
@@ -530,6 +597,12 @@ var node = elements[i];
         // stop moving when mouse button is released:
         document.onmouseup = null;
         document.onmousemove = null;
+        selecting = false;
+        if(queueClear){
+clearSelection();
+}
+        queueClear = false;
+drawSelection();
         shiftElements();
         render();
         saveState();
@@ -537,6 +610,7 @@ var node = elements[i];
     document.documentElement.onmousedown = bodyDrag;
 
     function bodyDrag(e) {
+console.log(queueClear);
         if (updated) {
             recreateElements();
             saveState();
@@ -547,11 +621,50 @@ var node = elements[i];
             cameraDragMouseDown(e);
         }
     }
+else if(selecting||keyStates[KeyCode.B]||selected.length==0){
+        selectDragMouseDown(e);
+        }
         else if(selected.length>0){
             dragMouseDown(e);
         }
     }
+   function selectDragMouseDown(e) {
+       nodeCache = getAllNodes();
+       selecting = true;
+        startSelectPos = {
+            x: e.clientX,
+            y: e.clientY
+        };
+        document.onmouseup = closeDragElement;
+        document.onmousemove = function (e) {
+            selectDrag(e);
+        }
+    }
+   function selectDrag(e) {
+ endSelectPos = {x:e.clientX,y:e.clientY};
+drawSelection();
 
+    }
+    function drawSelection(){
+        var selectionBox = document.getElementById("selection");
+        if(selecting){
+            selectionBox.style.backgroundColor = "";
+            var trueStartPos = {x:Math.min(startSelectPos.x,endSelectPos.x),y:Math.min(startSelectPos.y,endSelectPos.y)}
+            var width = Math.abs(startSelectPos.x-endSelectPos.x);
+            var height = Math.abs(startSelectPos.y-endSelectPos.y);
+           selectionBox.style.left = `${trueStartPos.x}px`;
+               selectionBox.style.top = `${trueStartPos.y}px`;
+            selectionBox.style.width = `${width}px`;
+                   selectionBox.style.height = `${height}px`;
+            var trueEndPos = {x:trueStartPos.x+width,y:trueStartPos.y+height};
+            selectElementBox(trueStartPos,trueEndPos);
+           }
+        else{
+           selectionBox.style.width = 0;
+            selectionBox.style.height = 0;
+            selectionBox.style.backgroundColor = "rgba(0,0,0,0)";
+        }
+    }
     function cameraDragMouseDown(e) {
         var startPos = {
             x: e.clientX,
@@ -564,6 +677,7 @@ var node = elements[i];
     }
 
     function cameraDrag(e, startPos) {
+    queueClear = false;
         var offset = {
             x: startPos.x - e.clientX,
             y: startPos.y - e.clientY
@@ -575,7 +689,14 @@ var node = elements[i];
         data.camera.position.y -= deltaY / scale;
         cameraPos.x -= deltaX;
         cameraPos.y -= deltaY;
+        renderGrid();
         //shiftElements();
         render();
     }
+}
+function renderGrid(){
+        var baseGridHeight = 100;
+        var baseGridWidth = 100;
+        document.body.style.backgroundSize = `${baseGridWidth*scale}px ${baseGridHeight*scale}px`;
+        document.body.style.backgroundPosition = `top ${-data.camera.position.y*scale}px left ${-data.camera.position.x*scale}`;
 }
