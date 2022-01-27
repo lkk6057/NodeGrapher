@@ -15,13 +15,19 @@ const KeyCode = {
     SHIFT: 16,
     CTRL: 17,
     Z: 90,
-    B: 66
+    B: 66,
+    C: 67
 }
 var mousePos = {
     x: 0,
     y: 0
 };
 var keyStates = [];
+var settings = {
+    scaleMode: "mouse",
+    grid: false,
+    gridSize: 40
+}
 var data = {
     dom: {
         elements: []
@@ -34,12 +40,13 @@ var data = {
     }
 };
 var selected = [];
+
 function initialize() {
     main = document.getElementById("main");
     chart = document.getElementById("chart");
     camera = document.getElementById("camera");
-    document.addEventListener("mousedown",click);
-    
+    document.addEventListener("mousedown", click);
+
     document.addEventListener("mousemove", mouseMove);
 
     document.addEventListener("keydown", keyDown);
@@ -55,56 +62,111 @@ function initialize() {
 
 function zoom(event) {
     var zoomFactor = 1 - (event.deltaY * 0.001);
-    if(!keyStates[KeyCode.SHIFT]||selected.length==0){
-    scale *= zoomFactor;
+    if (!keyStates[KeyCode.SHIFT] || selected.length == 0) {
+        scale *= zoomFactor;
 
-    scale = Math.min(Math.max(0.001, scale), 10);
-    camera.style.transform = `scale(${scale})`;
-    var cMouse = centerPos(mousePos);
-    var mouseWorld = screenToWorldPos(mousePos);
-    var offset = {
-        x: mouseWorld.x - data.camera.position.x,
-        y: mouseWorld.y - data.camera.position.y
-    };
-    var mag = magnitude(offset);
+        scale = Math.min(Math.max(0.001, scale), 10);
+        camera.style.transform = `scale(${scale})`;
+        var cMouse = centerPos(mousePos);
+        var mouseWorld = screenToWorldPos(mousePos);
+        var offset = {
+            x: mouseWorld.x - data.camera.position.x,
+            y: mouseWorld.y - data.camera.position.y
+        };
+        var mag = magnitude(offset);
 
-    var width = document.body.clientWidth;
-    var height = document.body.clientHeight;
+        var width = document.body.clientWidth;
+        var height = document.body.clientHeight;
 
-    var normalOff = normalizeVector(offset);
-    var traverse = 5;
+        var normalOff = normalizeVector(offset);
+        var traverse = 5;
 
-    //data.camera.position.x+=offset.x/10;
-    //data.camera.position.y+=offset.y/10;
-}
-    else{
-        scaleSelected(zoomFactor);
+        //data.camera.position.x+=offset.x/10;
+        //data.camera.position.y+=offset.y/10;
+    } else {
+        if (keyStates[KeyCode.C]) {
+            circleScaleSelected(0.2);
+        } else {
+            scaleSelected(zoomFactor);
+        }
     }
     renderGrid();
     shiftElements();
     render();
 }
-function scaleSelected(zoomFactor){
-var selectedNodes = [];
-var totX = 0;
-var totY = 0;
-    for(var i = 0;i<selected.length;i++){
+function scaleSelected(zoomFactor) {
+    var selectedNodes = [];
+    var totX = 0;
+    var totY = 0;
+    for (var i = 0; i < selected.length; i++) {
         var node = getNodeById(selected[i]);
-        if(node!=null){
+        if (node != null) {
             selectedNodes.push(node);
-            totX+=node.position.x;
-            totY+=node.position.y;
-           }
+            totX += node.position.x;
+            totY += node.position.y;
+        }
     }
-var averagePos = {x:totX/selectedNodes.length,y:totY/selectedNodes.length};
-for(var i = 0;i<selectedNodes.length;i++){
-    var node = selectedNodes[i];
-           var averageOffset = {x:node.position.x-averagePos.x,y:node.position.y-averagePos.y};
-            var scaledOffset = multiplyVector(averageOffset,zoomFactor);
-            var newPosition = {x:averagePos.x+scaledOffset.x,y:averagePos.y+scaledOffset.y};
-            shiftNode(node,newPosition);
+    var averagePos = {
+        x: totX / selectedNodes.length,
+        y: totY / selectedNodes.length
+    };
+    for (var i = 0; i < selectedNodes.length; i++) {
+        var node = selectedNodes[i];
+        var newPosition;
+        switch (settings.scaleMode) {
+            case "average":
+                var averageOffset = {
+                    x: node.position.x - averagePos.x,
+                    y: node.position.y - averagePos.y
+                };
+                var scaledOffset = multiplyVector(averageOffset, zoomFactor);
+                newPosition = {
+                    x: averagePos.x + scaledOffset.x,
+                    y: averagePos.y + scaledOffset.y
+                };
+                break
+            case "mouse":
+                var mouseWorld = screenToWorldPos(mousePos);
+                var mouseOffset = {
+                    x: node.position.x - mouseWorld.x,
+                    y: node.position.y - mouseWorld.y
+                };
+                var scaledOffset = multiplyVector(mouseOffset, zoomFactor);
+                newPosition = {
+                    x: mouseWorld.x + scaledOffset.x,
+                    y: mouseWorld.y + scaledOffset.y
+                };
+
+                break;
+        }
+        shiftNode(node, newPosition);
+    }
+}
+var offset = 0;
+function circleScaleSelected(zoomFactor) {
+    var testCount = selected.length;
+        var baseAngle = (2*Math.PI)/testCount;
+        var width = document.body.clientWidth;
+    var height = document.body.clientHeight;
+var radius = (height/4);
+for(var i = 0;i<selected.length;i++){
+    var angle = baseAngle*(i+1);
+    angle+=offset;
+    var x = Math.cos(angle);
+    var y = Math.sin(angle);
+    var circleVector = setMagnitudeVector({x:x,y:y},radius);
+    var circleWorld = screenToWorldPos(circleVector);
+    var mouseWorld = multiplyVector(mousePos,1/scale);
+    var targetPos = {x:mouseWorld.x+circleWorld.x,y:mouseWorld.y+circleWorld.y};
+    
+var node = getNodeById(selected[i]);
+var targetOffset = {x:targetPos.x-node.position.x,y:targetPos.y-node.position.y};
+var scaledOffset = multiplyVector(targetOffset,zoomFactor);
+var newPos = addVector(node.position,scaledOffset);
+shiftNode(node,newPos);
 }
 }
+
 function keyDown(e) {
 
     keyStates[e.keyCode] = true;
@@ -121,101 +183,104 @@ function keyUp(e) {
 function inputKey(keyCode) {
     switch (keyCode) {
         case KeyCode.Z:
-        if (keyStates[KeyCode.CTRL]&&!updated) {
-            if (keyStates[KeyCode.SHIFT]) {
-                redo();
-            } else {
-                undo();
+            if (keyStates[KeyCode.CTRL] && !updated) {
+                if (keyStates[KeyCode.SHIFT]) {
+                    redo();
+                } else {
+                    undo();
+                }
             }
-        }
-        break;
+            break;
     }
 }
 
 var saves = [];
 var currentSave = 0;
+
 function saveState() {
-saves.splice(currentSave+1);
-var saveState = JSON.stringify(data);
-saves.push(saveState);
-currentSave = saves.length-1;
+    saves.splice(currentSave + 1);
+    var saveState = JSON.stringify(data);
+    saves.push(saveState);
+    currentSave = saves.length - 1;
 }
 
 function undo() {
-currentSave = Math.max(0,currentSave-1);
-loadSave();
+    currentSave = Math.max(0, currentSave - 1);
+    loadSave();
 }
 
 function redo() {
-currentSave = Math.min(saves.length-1,currentSave+1);
-loadSave();
+    currentSave = Math.min(saves.length - 1, currentSave + 1);
+    loadSave();
 }
-function loadSave(){
-data = JSON.parse(saves[currentSave]);
-recreateElements();
+
+function loadSave() {
+    data = JSON.parse(saves[currentSave]);
+    recreateElements();
 }
 var queueClear = false;
-function click(e){
+
+function click(e) {
     var target = e.path[0];
-    if(!keyStates[KeyCode.SHIFT]){
-       queueClear = true;
-       }
-    else{
-if(target.blur!=null){
-target.blur();
+    if (!keyStates[KeyCode.SHIFT]) {
+        queueClear = true;
+    } else {
+        if (target.blur != null) {
+            target.blur();
+        }
     }
-    }
-        if(target.tagName=="NODE"){
+    if (target.tagName == "NODE") {
         selectElement(target);
-            
-       }
-else{
-       for(var i = 0;i<selected.length;i++){
-var selectedElement = selected[i];       
-if(selectedElement.blur!=null){
-          selectedElement.blur();
-          }
-   }
+
+    } else {
+        for (var i = 0; i < selected.length; i++) {
+            var selectedElement = selected[i];
+            if (selectedElement.blur != null) {
+                selectedElement.blur();
+            }
+        }
+    }
 }
-}
-function clearSelection(){
-    for(var i = 0;i<selected.length;i++){
+
+function clearSelection() {
+    for (var i = 0; i < selected.length; i++) {
         var selectedElement = document.getElementById(selected[i]);
-        if(selectedElement!=null){
-           selectedElement.classList.remove("selected");
-           }
+        if (selectedElement != null) {
+            selectedElement.classList.remove("selected");
+        }
     }
-   selected = []; 
+    selected = [];
 }
-function selectElement(element, mode = -1){
-if(mode==-1){
-   if(!selected.includes(element.id)){
-           mode = 0;
+
+function selectElement(element, mode = -1) {
+    if (mode == -1) {
+        if (!selected.includes(element.id)) {
+            mode = 0;
+        } else {
+            mode = 1
+        }
+    }
+    switch (mode) {
+        case 0:
+            if (!selected.includes(element.id)) {
+                selected.push(element.id);
+            }
+            break
+        case 1:
+            selected.splice(selected.indexOf(element.id), 1);
+            break;
+            highlightElement(element);
+    }
 }
-else{
-    mode = 1
-}
-   }
-switch(mode){
-    case 0:
-           if(!selected.includes(element.id)){
-           selected.push(element.id);
-}
-    break
-    case 1:
-    selected.splice(selected.indexOf(element.id),1);
-    break;
-highlightElement(element);
-}
-}
-function highlightElement(element){
-    if(selected.includes(element.getAttribute("id"))){
+
+function highlightElement(element) {
+    if (selected.includes(element.getAttribute("id"))) {
         element.classList.add("selected");
-}
-    else{
-                element.classList.remove("selected");
+    } else {
+        element.classList.remove("selected");
     }
 }
+
 function mouseMove(e) {
     mousePos.x = e.clientX;
     mousePos.y = e.clientY;
@@ -238,7 +303,7 @@ function load() {
 
 
     var area = 4000;
-    for (var i = 0; i < 100; i++) {
+    for (var i = 0; i < 300; i++) {
         var x = getRandomInt(-area, area);
         var y = getRandomInt(-area, area);
         data.dom.elements.push({
@@ -308,12 +373,13 @@ function shiftElements() {
         nodeEle.style.top = screenPos.y + "px";
     }
 }
-function shiftNode(node,pos){
+
+function shiftNode(node, pos) {
     node.position = pos;
     var ele = document.getElementById(node.id);
     var screenPos = worldToScreenPos(node.position);
-        ele.style.left = screenPos.x + "px";
-        ele.style.top = screenPos.y + "px";
+    ele.style.left = screenPos.x + "px";
+    ele.style.top = screenPos.y + "px";
 }
 
 function generateUUID() {
@@ -394,7 +460,10 @@ function screenToWorldPos(pos) {
 function magnitude(vector) {
     return Math.sqrt(vector.x ** 2 + vector.y ** 2);
 }
-
+function distance(vector1,vector2){
+    var offsetVector = {x:vector1.x-vector2.x,y:vector1.y-vector2.y};
+    return magnitude(offsetVector);
+}
 function multiplyVector(vector, factor) {
     var multiplied = {
         x: vector.x * factor,
@@ -402,10 +471,20 @@ function multiplyVector(vector, factor) {
     };
     return multiplied;
 }
-
+function addVector(vector1, vector2) {
+    var added = {
+        x: vector1.x + vector2.x,
+        y: vector1.y + vector2.y
+    };
+    return added;
+}
 function normalizeVector(vector) {
     var mag = magnitude(vector);
     return multiplyVector(vector, 1 / mag);
+}
+function setMagnitudeVector(vector,targetMagnitude) {
+    var mag = magnitude(vector);
+    return multiplyVector(vector, (1 / mag)*targetMagnitude);
 }
 
 function centerPos(pos, center = true) {
@@ -524,24 +603,32 @@ function countNodes(nodes) {
     return nodeCount;
 }
 var nodeCache = [];
-function selectElementBox(origin,end){
-var worldOrigin = screenToWorldPos(origin);
-var worldEnd = screenToWorldPos(end);
-    for(var i = 0;i<nodeCache.length;i++){
+
+function selectElementBox(origin, end) {
+    var worldOrigin = screenToWorldPos(origin);
+    var worldEnd = screenToWorldPos(end);
+    for (var i = 0; i < nodeCache.length; i++) {
         var node = nodeCache[i];
         var pos = node.position;
-        if(pos.x>=worldOrigin.x&&pos.x<worldEnd.x&&pos.y>=worldOrigin.y&&pos.y<worldEnd.y){
+        if (pos.x >= worldOrigin.x && pos.x < worldEnd.x && pos.y >= worldOrigin.y && pos.y < worldEnd.y) {
             var element = document.getElementById(node.id);
-            if(element!=null){
-           selectElement(element,0);
+            if (element != null) {
+                selectElement(element, 0);
                 highlightElement(element);
+            }
         }
-           }
     }
 }
-var startSelectPos = {x:0,y:0};
-var endSelectPos = {x:0,y:0};
+var startSelectPos = {
+    x: 0,
+    y: 0
+};
+var endSelectPos = {
+    x: 0,
+    y: 0
+};
 var selecting = false;
+
 function dragElement(elmnt) {
     var pos1 = 0,
         pos2 = 0,
@@ -563,34 +650,33 @@ function dragElement(elmnt) {
         e = e || window.event;
         e.preventDefault();
         var elements = [];
-        if(selected.length==0){
-        var element = getNodeById(elmnt.id);
-elements.push(element);
-    }
-else{
-    for(var i = 0;i<selected.length;i++){
-var retrieved = document.getElementById(selected[i]);
-if(retrieved!=null){
-   elements.push(retrieved);
-   }
-}
-}
-for(var i = 0;i<elements.length;i++){
-var node = elements[i];
-        if (node != null) {
-        var x = Number(node.style.left.replace("px", ""));
-        var y = Number(node.style.top.replace("px", ""));
-        var screenPos = {
-            x: (x + (e.movementX / scale)),
-            y: (y + (e.movementY / scale))
-        };
-        node.style.top = screenPos.y;
-        node.style.left = screenPos.x;
-            var retrievedNode = getNodeById(node.id);
-            retrievedNode.position.x += (e.movementX / scale);
-            retrievedNode.position.y += (e.movementY / scale);
+        if (selected.length == 0) {
+            var element = getNodeById(elmnt.id);
+            elements.push(element);
+        } else {
+            for (var i = 0; i < selected.length; i++) {
+                var retrieved = document.getElementById(selected[i]);
+                if (retrieved != null) {
+                    elements.push(retrieved);
+                }
+            }
         }
-}
+        for (var i = 0; i < elements.length; i++) {
+            var node = elements[i];
+            if (node != null) {
+                var x = Number(node.style.left.replace("px", ""));
+                var y = Number(node.style.top.replace("px", ""));
+                var screenPos = {
+                    x: (x + (e.movementX / scale)),
+                    y: (y + (e.movementY / scale))
+                };
+                node.style.top = screenPos.y;
+                node.style.left = screenPos.x;
+                var retrievedNode = getNodeById(node.id);
+                retrievedNode.position.x += (e.movementX / scale);
+                retrievedNode.position.y += (e.movementY / scale);
+            }
+        }
     }
 
     function closeDragElement() {
@@ -598,11 +684,11 @@ var node = elements[i];
         document.onmouseup = null;
         document.onmousemove = null;
         selecting = false;
-        if(queueClear){
-clearSelection();
-}
+        if (queueClear) {
+            clearSelection();
+        }
         queueClear = false;
-drawSelection();
+        drawSelection();
         shiftElements();
         render();
         saveState();
@@ -610,27 +696,25 @@ drawSelection();
     document.documentElement.onmousedown = bodyDrag;
 
     function bodyDrag(e) {
-console.log(queueClear);
         if (updated) {
             recreateElements();
             saveState();
             updated = false;
         }
-        if(!keyStates[KeyCode.SHIFT]){
-        if (e.path[0].id == "chart" || e.path[0].id == "main" || e.path[0].id == "camera" || e.path[0].tagName == "HTML" && e.button == 0) {
-            cameraDragMouseDown(e);
-        }
-    }
-else if(selecting||keyStates[KeyCode.B]||selected.length==0){
-        selectDragMouseDown(e);
-        }
-        else if(selected.length>0){
+        if (!keyStates[KeyCode.SHIFT]) {
+            if (e.path[0].id == "chart" || e.path[0].id == "main" || e.path[0].id == "camera" || e.path[0].tagName == "HTML" && e.button == 0) {
+                cameraDragMouseDown(e);
+            }
+        } else if (selecting || keyStates[KeyCode.B] || selected.length == 0) {
+            selectDragMouseDown(e);
+        } else if (selected.length > 0) {
             dragMouseDown(e);
         }
     }
-   function selectDragMouseDown(e) {
-       nodeCache = getAllNodes();
-       selecting = true;
+
+    function selectDragMouseDown(e) {
+        nodeCache = getAllNodes();
+        selecting = true;
         startSelectPos = {
             x: e.clientX,
             y: e.clientY
@@ -640,31 +724,42 @@ else if(selecting||keyStates[KeyCode.B]||selected.length==0){
             selectDrag(e);
         }
     }
-   function selectDrag(e) {
- endSelectPos = {x:e.clientX,y:e.clientY};
-drawSelection();
+
+    function selectDrag(e) {
+        endSelectPos = {
+            x: e.clientX,
+            y: e.clientY
+        };
+        drawSelection();
 
     }
-    function drawSelection(){
+
+    function drawSelection() {
         var selectionBox = document.getElementById("selection");
-        if(selecting){
-            selectionBox.style.backgroundColor = "";
-            var trueStartPos = {x:Math.min(startSelectPos.x,endSelectPos.x),y:Math.min(startSelectPos.y,endSelectPos.y)}
-            var width = Math.abs(startSelectPos.x-endSelectPos.x);
-            var height = Math.abs(startSelectPos.y-endSelectPos.y);
-           selectionBox.style.left = `${trueStartPos.x}px`;
-               selectionBox.style.top = `${trueStartPos.y}px`;
+        if (selecting) {
+            selectionBox.style.visibility = "visible";
+            var trueStartPos = {
+                x: Math.min(startSelectPos.x, endSelectPos.x),
+                y: Math.min(startSelectPos.y, endSelectPos.y)
+            }
+            var width = Math.abs(startSelectPos.x - endSelectPos.x);
+            var height = Math.abs(startSelectPos.y - endSelectPos.y);
+            selectionBox.style.left = `${trueStartPos.x}px`;
+            selectionBox.style.top = `${trueStartPos.y}px`;
             selectionBox.style.width = `${width}px`;
-                   selectionBox.style.height = `${height}px`;
-            var trueEndPos = {x:trueStartPos.x+width,y:trueStartPos.y+height};
-            selectElementBox(trueStartPos,trueEndPos);
-           }
-        else{
-           selectionBox.style.width = 0;
+            selectionBox.style.height = `${height}px`;
+            var trueEndPos = {
+                x: trueStartPos.x + width,
+                y: trueStartPos.y + height
+            };
+            selectElementBox(trueStartPos, trueEndPos);
+        } else {
+            selectionBox.style.width = 0;
             selectionBox.style.height = 0;
-            selectionBox.style.backgroundColor = "rgba(0,0,0,0)";
+            selectionBox.style.visibility = "hidden";
         }
     }
+
     function cameraDragMouseDown(e) {
         var startPos = {
             x: e.clientX,
@@ -677,11 +772,13 @@ drawSelection();
     }
 
     function cameraDrag(e, startPos) {
-    queueClear = false;
         var offset = {
             x: startPos.x - e.clientX,
             y: startPos.y - e.clientY
         };
+        if (magnitude(offset) > 20) {
+            queueClear = false;
+        }
         var deltaX = e.movementX;
         var deltaY = e.movementY;
 
@@ -694,9 +791,15 @@ drawSelection();
         render();
     }
 }
-function renderGrid(){
-        var baseGridHeight = 100;
-        var baseGridWidth = 100;
+
+function renderGrid() {
+    if (settings.grid) {
+        var baseGridHeight = settings.gridSize;
+        var baseGridWidth = settings.gridSize;
         document.body.style.backgroundSize = `${baseGridWidth*scale}px ${baseGridHeight*scale}px`;
         document.body.style.backgroundPosition = `top ${-data.camera.position.y*scale}px left ${-data.camera.position.x*scale}`;
+        document.body.style.backgroundImage = "";
+    } else {
+        document.body.style.backgroundImage = "none";
+    }
 }

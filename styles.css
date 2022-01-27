@@ -27,10 +27,34 @@ node{
 .selected{
     border: 3px solid cyan;
   background-color: rgba(217, 245, 255,1);
+	animation: border-pulsate 1s infinite, pulse 1s infinite;
+    outline-offset: 0;
+}
+
+@keyframes pulse {
+	0% {
+		transform: scale(0.95);
+		box-shadow: 0 0 0 0 rgba(0, 79, 152, 0.7);
+	}
+
+	70% {
+		transform: scale(1);
+		box-shadow: 0 0 0 10px rgba(0, 79, 152, 0);
+	}
+
+	100% {
+		transform: scale(0.95);
+		box-shadow: 0 0 0 0 rgba(0, 79, 152, 0);
+	}
+}
+@keyframes border-pulsate {
+    0%   { border-color: rgba(0, 150, 255, 0); }
+    50% { border-color: rgba(0, 150, 255, 0); }
+    100%   { border-color: rgba(0, 150, 255, 1); }
 }
 .selection{
     position: fixed;
-    background-color: rgba(217, 245, 255,0.5);
+    background-color: rgba(51,144,255,0.5);
     border: dashed 3px rgba(217, 245, 255,0.8);
 }
 body{
