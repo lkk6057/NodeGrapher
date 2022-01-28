@@ -61,31 +61,18 @@ function initialize() {
 }
 
 function zoom(event) {
-    cameraPos = multiplyVector(centerPos(mousePos),-1);
-    shiftElements();
-
+        var oldCamPos = JSON.stringify(cameraPos);
+    cameraPos = multiplyVector(centerPos(mousePos),1);
+    console.log(cameraPos);
+    if(oldCamPos!=JSON.stringify(cameraPos)){
+       shiftElements();
+       }
     var zoomFactor = 1 - (event.deltaY * 0.001);
     if (!keyStates[KeyCode.SHIFT] || selected.length == 0) {
+                if(!keyStates[88]){
         scale *= zoomFactor;
-
+        }
         scale = Math.min(Math.max(0.001, scale), 10);
-        camera.style.transform = `scale(${scale})`;
-        var cMouse = centerPos(mousePos);
-        var mouseWorld = screenToWorldPos(mousePos);
-        var offset = {
-            x: mouseWorld.x - data.camera.position.x,
-            y: mouseWorld.y - data.camera.position.y
-        };
-        var mag = magnitude(offset);
-
-        var width = document.body.clientWidth;
-        var height = document.body.clientHeight;
-
-        var normalOff = normalizeVector(offset);
-        var traverse = 5;
-
-        //data.camera.position.x+=offset.x/10;
-        //data.camera.position.y+=offset.y/10;
     } else {
         if (keyStates[KeyCode.C]) {
             circleScaleSelected(0.2);
@@ -93,8 +80,8 @@ function zoom(event) {
             scaleSelected(zoomFactor);
         }
     }
+            camera.style.transform = `scale(${scale})`;
     renderGrid();
-    shiftElements();
     render();
 }
 function scaleSelected(zoomFactor) {
@@ -349,34 +336,26 @@ function recreateElements() {
 }
 
 function repositionElements() {
-    /*var allNodes = getAllNodes();
-     for(var i = 0;i<allNodes.length;i++){
-         var node = allNodes[i];
-         var screenPos = worldToScreenPos(node.position);
-         var nodeEle = document.getElementById(node.id);
-     nodeEle.style.left = screenPos.x+"px";
-     nodeEle.style.top = screenPos.y+"px";
-     }*/
 renderCamera();
 }
 function renderCamera(){
-    console.log(cameraPos);
-    var screenPos = centerPos(multiplyVector(cameraPos, -1), false);
+    var screenPos = centerPos(cameraPos, false);
     camera.style.left = (screenPos.x) + "px";
     camera.style.top = (screenPos.y) + "px";
 }
 function shiftElements() {
-renderCamera();
 
     var allNodes = getAllNodes();
     for (var i = 0; i < allNodes.length; i++) {
         var node = allNodes[i];
-        var screenPos = addVector(worldToScreenPos(node.position),cameraPos);
+        var cameraOffset = multiplyVector(cameraPos,-1/scale);
+        var screenPos = addVector(worldToScreenPos(node.position),cameraOffset);
         
         var nodeEle = document.getElementById(node.id);
         nodeEle.style.left = screenPos.x + "px";
         nodeEle.style.top = screenPos.y + "px";
     }
+    renderCamera();
 }
 
 function shiftNode(node, pos) {
@@ -453,7 +432,6 @@ function generateNodeElement(node) {
 
 function worldToScreenPos(pos) {
     var screenPos = {};
-
     screenPos.x = (pos.x - data.camera.position.x);
     screenPos.y = (pos.y - data.camera.position.y);
     return screenPos;
@@ -775,11 +753,6 @@ function dragElement(elmnt) {
     }
 
     function cameraDragMouseDown(e) {
-            cameraPos = {
-        x: 0,
-        y: 0
-    };
-        shiftElements();
         var startPos = {
             x: e.clientX,
             y: e.clientY
@@ -803,8 +776,8 @@ function dragElement(elmnt) {
 
         data.camera.position.x -= deltaX / scale;
         data.camera.position.y -= deltaY / scale;
-        cameraPos.x -= deltaX;
-        cameraPos.y -= deltaY;
+        cameraPos.x += deltaX;
+        cameraPos.y += deltaY;
         renderGrid();
         //shiftElements();
         render();
