@@ -61,6 +61,9 @@ function initialize() {
 }
 
 function zoom(event) {
+    cameraPos = multiplyVector(centerPos(mousePos),-1);
+    shiftElements();
+
     var zoomFactor = 1 - (event.deltaY * 0.001);
     if (!keyStates[KeyCode.SHIFT] || selected.length == 0) {
         scale *= zoomFactor;
@@ -198,10 +201,12 @@ var saves = [];
 var currentSave = 0;
 
 function saveState() {
+        var saveState = JSON.stringify(data.dom);
+    if(saves[currentSave]!=saveState){
     saves.splice(currentSave + 1);
-    var saveState = JSON.stringify(data);
     saves.push(saveState);
     currentSave = saves.length - 1;
+}
 }
 
 function undo() {
@@ -215,7 +220,7 @@ function redo() {
 }
 
 function loadSave() {
-    data = JSON.parse(saves[currentSave]);
+    data.dom = JSON.parse(saves[currentSave]);
     recreateElements();
 }
 var queueClear = false;
@@ -297,7 +302,8 @@ function load() {
         position: {
             x: 0,
             y: 0
-        }
+        },
+        style:[{name:"backgroundColor",value:"white"}]
 
     });
 
@@ -313,7 +319,8 @@ function load() {
             position: {
                 x: x,
                 y: y
-            }
+            },
+        style:[{name:"backgroundColor",value:"white"}]
 
         });
     }
@@ -350,24 +357,22 @@ function repositionElements() {
      nodeEle.style.left = screenPos.x+"px";
      nodeEle.style.top = screenPos.y+"px";
      }*/
+renderCamera();
+}
+function renderCamera(){
+    console.log(cameraPos);
     var screenPos = centerPos(multiplyVector(cameraPos, -1), false);
     camera.style.left = (screenPos.x) + "px";
     camera.style.top = (screenPos.y) + "px";
 }
-
 function shiftElements() {
-    cameraPos = {
-        x: 0,
-        y: 0
-    };
-    var screenPos = centerPos(multiplyVector(cameraPos, -1), false);
-    camera.style.left = (screenPos.x) + "px";
-    camera.style.top = (screenPos.y) + "px";
+renderCamera();
 
     var allNodes = getAllNodes();
     for (var i = 0; i < allNodes.length; i++) {
         var node = allNodes[i];
-        var screenPos = worldToScreenPos(node.position);
+        var screenPos = addVector(worldToScreenPos(node.position),cameraPos);
+        
         var nodeEle = document.getElementById(node.id);
         nodeEle.style.left = screenPos.x + "px";
         nodeEle.style.top = screenPos.y + "px";
@@ -436,6 +441,12 @@ function generateNodeElement(node) {
     }
     dragElement(nodeEle);
     nodeEle.setAttribute("id", node.id);
+    if(node.style!=null){
+       for(var i = 0;i<node.style.length;i++){
+           var style = node.style[i];
+           nodeEle.style[style.name] = style.value;
+       }
+       }
     highlightElement(nodeEle);
     return nodeEle;
 }
@@ -515,7 +526,6 @@ function editedText(event) {
         var breaks = (ele.innerText.match(/\n/g) || []).length;
         var unescaped = breaks > 0 ? "<pre>" + ele.innerText + "</pre>" : ele.innerText;
         node.text = unescaped;
-        console.log(unescaped);
         updated = true;
     }
 }
@@ -689,6 +699,10 @@ function dragElement(elmnt) {
         }
         queueClear = false;
         drawSelection();
+            cameraPos = {
+        x: 0,
+        y: 0
+    };
         shiftElements();
         render();
         saveState();
@@ -761,6 +775,11 @@ function dragElement(elmnt) {
     }
 
     function cameraDragMouseDown(e) {
+            cameraPos = {
+        x: 0,
+        y: 0
+    };
+        shiftElements();
         var startPos = {
             x: e.clientX,
             y: e.clientY
@@ -796,8 +815,10 @@ function renderGrid() {
     if (settings.grid) {
         var baseGridHeight = settings.gridSize;
         var baseGridWidth = settings.gridSize;
+        var scaledWidth = (document.body.clientWidth/2);
+        var scaledHeight = (document.body.clientHeight/2);
         document.body.style.backgroundSize = `${baseGridWidth*scale}px ${baseGridHeight*scale}px`;
-        document.body.style.backgroundPosition = `top ${-data.camera.position.y*scale}px left ${-data.camera.position.x*scale}`;
+        document.body.style.backgroundPosition = `top ${(-data.camera.position.y*scale)+scaledHeight}px left ${(-data.camera.position.x*scale)+scaledWidth}`;
         document.body.style.backgroundImage = "";
     } else {
         document.body.style.backgroundImage = "none";

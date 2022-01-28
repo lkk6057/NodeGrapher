@@ -17,6 +17,8 @@ font-size:20px;
     position: absolute;
     width:1000000%;
     transform-origin: top left;
+    height:100%;
+    background-color: blue;
 }
 node{
     text-align: center;
