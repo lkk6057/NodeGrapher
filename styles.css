@@ -17,20 +17,20 @@ font-size:20px;
     position: absolute;
     width:1000000%;
     transform-origin: top left;
-    height:100%;
-    background-color: blue;
+    height:1000000%;
 }
 node{
     text-align: center;
     padding:0.2em;
     border-radius:0.5em;
     border: 1px solid black;
+    transform: translate(-50%,-50%) !important;
+    background-color: white;
 }
 .selected{
     border: 3px solid cyan;
-  background-color: rgba(217, 245, 255,1);
+  background-color: rgba(217, 245, 255,1) !important;
 	animation: border-pulsate 1s infinite, pulse 1s infinite;
-    outline-offset: 0;
 }
 
 @keyframes pulse {
@@ -71,11 +71,17 @@ pre{
   white-space: pre-line;
     padding-right:1em;
     padding-left:1em;
+user-select: none;
 }
-node:focus{
-  background-color: rgba(0, 0, 0,0);
+line{
+    position:absolute;
+    height: 3px;
+    width:800px;
+    border-radius:2em;
+    background-color: black;
+    transform-origin: left;
+    z-index: -1;
 }
-
-node:hover {
-  background-color: rgba(217, 245, 255,1);
+.effects{
+    position:absolute;
 }
