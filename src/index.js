@@ -2,6 +2,9 @@ window.onload = initialize;
 var main;
 var chart;
 var camera;
+var tools;
+var toolsHead;
+var toolsBody;
 var cameraPos = {
     x: 0,
     y: 0
@@ -28,6 +31,25 @@ const KeyCode = {
     Y: 89,
     Z: 90
 }
+const KeyBinds = {
+    CTRL: 17,
+    UNDO: 90,
+    MOVE: 16,
+    ALTERNATE: 18,
+    CIRCLESCALE: 67,
+    RADIUS: 83,
+    ROTATE: 82,
+    BOXSELECT: 66,
+    SELECTALL: 65,
+    RESET: 70,
+    ORDERSORT: 86,
+    YAXIS: 90,
+    XAXIS: 88,
+
+}
+const MacKeyBinds = {
+    CTRL: 91
+}
 var mousePos = {
     x: 0,
     y: 0
@@ -43,9 +65,6 @@ var settings = {
 }
 var data = {
     library: {},
-    dom: {
-        elements: []
-    },
     camera: {
         position: {
             x: 0,
@@ -56,11 +75,24 @@ var data = {
 var selected = [];
 
 function initialize() {
+    initializeDocument();
+    initializeKeybinds();
+    repositionElements();
+    load();
+    renderGrid();
+    render();
+}
+
+function initializeDocument() {
     main = document.getElementById("main");
     chart = document.getElementById("chart");
     camera = document.getElementById("camera");
     effectsElement = document.getElementById("effects");
     cameraNodes = document.getElementById("elements");
+    tools = document.getElementById("tools");
+    toolsHead = document.getElementById("toolsHead");
+    toolsBody = document.getElementById("toolsBody");
+    initializeTools();
     document.addEventListener("mousedown", click);
 
     document.addEventListener("mousemove", mouseMove);
@@ -69,25 +101,57 @@ function initialize() {
 
     document.addEventListener("keyup", keyUp);
 
+    window.addEventListener("unload", saveCamera);
+
+    window.addEventListener("blur", unfocusWindow);
+    
+    window.addEventListener("resize",resizeWindow);
     document.onwheel = zoom;
-    repositionElements();
-    load();
-    renderGrid();
-    render();
+
+    windowSize = {width:getWindowWidth(),height:getWindowHeight()};
+}
+function getWindowWidth(){
+    return window.innerWidth;
+}
+function getWindowHeight(){
+    return window.innerHeight
+}
+function initializeKeybinds() {
+    var isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+    if (isMac) {
+        for (var prop in MacKeyBinds) {
+            KeyBinds[prop] = MacKeyBinds[prop];
+        }
+    }
 }
 
+function unfocusWindow(e) {
+    keyStates = [];
+}
+var windowSize;
+function resizeWindow(e){
+    centerCamera();
+    var width = getWindowWidth();
+    var height = getWindowHeight();
+    var xScale = width/windowSize.width;
+    var yScale = height/windowSize.height;
+    windowSize.width = width;
+    windowSize.height =height;
+    toolsRescale(xScale,yScale);
+    
+}
 function zoom(event) {
     if (!nodeFocused()) {
         var delta = event.deltaY;
         var deltaMag = Math.abs(delta);
         var zoomFactor = 1 - (delta * 0.001);
-        if (!keyStates[KeyCode.SHIFT] || selected.length == 0) {
+        if (!keyStates[KeyBinds.MOVE] || selected.length == 0) {
             scale *= zoomFactor;
             scale = Math.min(Math.max(0.001, scale), 10);
         } else {
-            if (keyStates[KeyCode.C]) {
+            if (keyStates[KeyBinds.CIRCLESCALE]) {
                 var changeRate = 0.0002;
-                if (keyStates[KeyCode.ALT]) {
+                if (keyStates[KeyBinds.ALTERNATE]) {
                     settings.circleOffset += delta * changeRate;
                     if (settings.circleOffset > 1) {
                         settings.circleOffset = 0;
@@ -95,7 +159,7 @@ function zoom(event) {
                         settings.circleOffset = 1;
                     }
                     circleScaleSelected(0.5);
-                } else if (keyStates[KeyCode.S]) {
+                } else if (keyStates[KeyBinds.RADIUS]) {
                     settings.circleFactor -= delta * changeRate;
                     settings.circleFactor = clamp(settings.circleFactor, 0, 1);
                     circleScaleSelected(0.5);
@@ -106,13 +170,13 @@ function zoom(event) {
                     }
                     circleScaleSelected(0.5);
                 }
-            } else if (keyStates[KeyCode.R]) {
+            } else if (keyStates[KeyBinds.ROTATE]) {
                 rotateSelected(delta);
             } else {
                 scaleSelected(zoomFactor);
             }
         }
-        camera.style.transform = `scale(${scale})`;
+        scaleCamera();
         cameraPos = {
             x: 0,
             y: 0
@@ -172,9 +236,9 @@ function scaleSelected(zoomFactor) {
 
                 break;
         }
-        if (keyStates[KeyCode.X]) {
+        if (keyStates[KeyBinds.XAXIS]) {
             newPosition.y = node.position.y;
-        } else if (keyStates[KeyCode.Z]) {
+        } else if (keyStates[KeyBinds.YAXIS]) {
             newPosition.x = node.position.x;
         }
         shiftNode(node, newPosition);
@@ -183,10 +247,10 @@ function scaleSelected(zoomFactor) {
 
 function circleScaleSelected(zoomFactor) {
     var baseAngle = (((2 * Math.PI) * settings.circleFactor) / selected.length);
-    var width = document.body.clientWidth;
-    var height = document.body.clientHeight;
+    var width = getWindowWidth();
+    var height = getWindowHeight();
     var least = Math.min(width, height);
-    var radius = (least / 3)/scale;
+    var radius = (least / 3) / scale;
     for (var i = 0; i < selected.length; i++) {
         var angle = -baseAngle * i;
         angle += (2 * Math.PI) * settings.circleOffset;
@@ -215,64 +279,75 @@ function circleScaleSelected(zoomFactor) {
 }
 
 function rotateSelected(delta) {
-var mouseWorld = screenToWorldPos(mousePos);
-var rotDelta = (delta*0.0002)*(2*Math.PI);
-for(var i = 0;i<selected.length;i++){
-    var node = getNodeById(selected[i]);
-    var mouseOffset = {x:node.position.x-mouseWorld.x,y:node.position.y-mouseWorld.y};
-    var rotatedVector = rotateVector(mouseOffset,rotDelta);
-    var newPos = {x:mouseWorld.x+rotatedVector.x,y: mouseWorld.y+rotatedVector.y};
-    shiftNode(node,newPos);
+    var mouseWorld = screenToWorldPos(mousePos);
+    var rotDelta = (delta * 0.0002) * (2 * Math.PI);
+    for (var i = 0; i < selected.length; i++) {
+        var node = getNodeById(selected[i]);
+        var mouseOffset = {
+            x: node.position.x - mouseWorld.x,
+            y: node.position.y - mouseWorld.y
+        };
+        var rotatedVector = rotateVector(mouseOffset, rotDelta);
+        var newPos = {
+            x: mouseWorld.x + rotatedVector.x,
+            y: mouseWorld.y + rotatedVector.y
+        };
+        shiftNode(node, newPos);
+    }
 }
-}
-function orderSelected(){
-var minWidth = 0;
-var minHeight = 0;
-var mouseWorld = screenToWorldPos(mousePos);
-var selectedElements = [];
-for(var i = 0;i<selected.length;i++){
-    var element = document.getElementById(selected[i]);
-    selectedElements.push(element);
-    if(element.offsetWidth>minWidth){
-       minWidth = element.offsetWidth;
-       }
-    if(element.offsetHeight>minHeight){
-       minHeight = element.offsetHeight;
-       }
-}
-    var minSize = Math.max(minWidth,minHeight);
-    if(keyStates[KeyCode.ALT]){
-                   var widthOffset = 0;
-       for(var i = 0;i<selected.length;i++){
-           var node = getNodeById(selected[i]);
-           var newPos = {x:mouseWorld.x+widthOffset,y:mouseWorld.y};
-           shiftNode(node,newPos);
-           if(i<selected.length+1){
-           widthOffset += (selectedElements[i].offsetWidth+selectedElements[i+1].offsetWidth)/2;
-       }
-           else{
-               widthOffset += selectedElements[i].offsetWidth;
-           }
-       }
-       }
-    else{
+
+function orderSelected() {
+    var minWidth = 0;
+    var minHeight = 0;
+    var mouseWorld = screenToWorldPos(mousePos);
+    var selectedElements = [];
+    for (var i = 0; i < selected.length; i++) {
+        var element = document.getElementById(selected[i]);
+        selectedElements.push(element);
+        if (element.offsetWidth > minWidth) {
+            minWidth = element.offsetWidth;
+        }
+        if (element.offsetHeight > minHeight) {
+            minHeight = element.offsetHeight;
+        }
+    }
+    var minSize = Math.max(minWidth, minHeight);
+    if (keyStates[KeyBinds.ALTERNATE]) {
+        var widthOffset = 0;
+        for (var i = 0; i < selected.length; i++) {
+            var node = getNodeById(selected[i]);
+            var newPos = {
+                x: mouseWorld.x + widthOffset,
+                y: mouseWorld.y
+            };
+            shiftNode(node, newPos);
+            if (i < selected.length + 1) {
+                widthOffset += (selectedElements[i].offsetWidth + selectedElements[i + 1].offsetWidth) / 2;
+            } else {
+                widthOffset += selectedElements[i].offsetWidth;
+            }
+        }
+    } else {
         var rowSize = Math.ceil(Math.sqrt(selected.length));
-        var columnCount = Math.ceil(selected.length/rowSize);
-        for(var y = 0;y<columnCount;y++){
-            for(var x = 0;x<rowSize;x++){
-                var index = (rowSize*y)+x;
-                if(index<selected.length){
-                   var node = getNodeById(selected[index]);
-                    var newPos = {x:mouseWorld.x+(x*minSize),y:mouseWorld.y+(y*minSize)};
-                    shiftNode(node,newPos);
-                   }
-                   else{
-                   break;
-                   }
+        var columnCount = Math.ceil(selected.length / rowSize);
+        for (var y = 0; y < columnCount; y++) {
+            for (var x = 0; x < rowSize; x++) {
+                var index = (rowSize * y) + x;
+                if (index < selected.length) {
+                    var node = getNodeById(selected[index]);
+                    var newPos = {
+                        x: mouseWorld.x + (x * minSize),
+                        y: mouseWorld.y + (y * minSize)
+                    };
+                    shiftNode(node, newPos);
+                } else {
+                    break;
+                }
             }
         }
     }
 }
+
 function keyDown(e) {
 
     keyStates[e.keyCode] = true;
@@ -291,40 +366,59 @@ function nodeFocused() {
 }
 
 function unfocus() {
-    document.activeElement.blur();
+    if (document.activeElement.tagName != "BODY") {
+        document.activeElement.blur();
+    }
 }
 
 function inputKey(keyCode) {
     if (!nodeFocused()) {
         switch (keyCode) {
-            case KeyCode.Z:
-                if (keyStates[KeyCode.CTRL] && !updated) {
-                    if (keyStates[KeyCode.SHIFT]) {
+            case KeyBinds.UNDO:
+                if (keyStates[KeyBinds.CTRL] && !updated) {
+                    if (keyStates[KeyBinds.MOVE]) {
                         redo();
                     } else {
                         undo();
                     }
                 }
                 break;
-            case KeyCode.A:
+            case KeyBinds.SELECTALL:
                 toggleAllSelect();
                 break;
-            case KeyCode.V:
+            case KeyBinds.ORDERSORT:
                 orderSelected();
-            break;
+                break;
+            case KeyBinds.RESET:
+                resetOrientation();
+                break;
         }
     }
 }
 
+function resetOrientation() {
+
+    scale = 1;
+    data.camera.position = {
+        x: 0,
+        y: 0
+    };
+    shiftElements();
+    renderCamera();
+
+}
 var saves = [];
 var currentSave = 0;
 
 function saveState() {
     var saveState = JSON.stringify(data.library);
+
     if (saves[currentSave] != saveState) {
         saves.splice(currentSave + 1);
         saves.push(saveState);
         currentSave = saves.length - 1;
+
+        saveAll();
     }
 }
 
@@ -343,19 +437,31 @@ function loadSave() {
     recreateElements();
     renderAllLines();
 }
+
+function saveData() {
+    var library = JSON.stringify(data.library);
+    localStorage.setItem("library", library);
+}
+
+function saveCamera() {
+    var cam = JSON.stringify({
+        position: data.camera.position,
+        scale: scale
+    });
+    localStorage.setItem("camera", cam);
+}
+
+function saveAll() {
+    saveData();
+    saveCamera();
+}
 var queueClear = false;
 
 function click(e) {
+    //console.log(e.path);
     queueClear = false;
-    var range = 3;
-    var target;
-    for (var i = 0; i < Math.min(e.path.length, range); i++) {
-        var potential = e.path[i];
-        if (potential.tagName == "NODE") {
-            target = potential
-        }
-    }
-    if (keyStates[KeyCode.CTRL]) {
+    var target = getNodeParent(e.path[0]);
+    if (keyStates[KeyBinds.CTRL]) {
         if (target != null) {
             setParents(target.id);
         } else {
@@ -363,17 +469,45 @@ function click(e) {
         }
     } else {
         if (target != null) {
-            if (!keyStates[KeyCode.SHIFT]) {
+            if (!keyStates[KeyBinds.MOVE]) {
                 clearSelection();
             }
             selectElement(target);
 
         } else {
-            if (!keyStates[KeyCode.SHIFT]) {
+            if (!keyStates[KeyBinds.MOVE]) {
                 queueClear = true;
             }
         }
     }
+}
+
+function getNodeParent(ele, range = 10) {
+    var potential = ele;
+    for (var i = 0; i < range; i++) {
+        if (potential.tagName == "NODE") {
+            return potential;
+        }
+        potential = potential.parentElement;
+        if (potential == null) {
+            return null;
+        }
+    }
+    return null;
+}
+
+function isDescendant(ele, ancestor, range = 10) {
+    var potential = ele;
+    for (var i = 0; i < range; i++) {
+        if (potential == ancestor) {
+            return true;
+        }
+        potential = potential.parentElement;
+        if (potential == null) {
+            return false;
+        }
+    }
+    return false;
 }
 
 function clearSelection() {
@@ -457,27 +591,10 @@ function highlightElement(element) {
 function mouseMove(e) {
     mousePos.x = e.clientX;
     mousePos.y = e.clientY;
-    var width = document.body.clientWidth;
-    var height = document.body.clientHeight;
+    var width = getWindowWidth();
+    var height = getWindowHeight();
 }
 
-function load() {
-    var origin = generateTextNode("origin");
-    var area = 2000;
-    for (var i = 0; i < 30; i++) {
-        var x = getRandomInt(-area, area);
-        var y = getRandomInt(-area, area);
-        var position = {
-            x: x,
-            y: y
-        };
-
-        var childEle = generateTextNode(`${x} ${y} ${i}`, position);
-    }
-
-
-
-}
 
 var nodeCount = -1;
 
@@ -561,7 +678,42 @@ function repositionElements() {
     renderCamera();
 }
 
+function load() {
+
+    var origin = generateTextNode("origin");
+    var area = 2000;
+    for (var i = 0; i < 50; i++) {
+        var x = getRandomInt(-area, area);
+        var y = getRandomInt(-area, area);
+        var position = {
+            x: x,
+            y: y
+        };
+
+        var childEle = generateTextNode(`${x} ${y} ${i}`, position);
+    }
+
+    var lib = JSON.parse(localStorage.getItem("library"));
+    if (lib != null) {
+        data.library = lib;
+
+    }
+    var cam = JSON.parse(localStorage.getItem("camera"));
+    if (cam != null) {
+        data.camera.position = cam.position;
+        scale = cam.scale;
+    }
+    scaleCamera();
+    render();
+    shiftElements();
+}
+
+function scaleCamera() {
+    camera.style.transform = `scale(${scale})`;
+}
+
 function renderCamera() {
+    scaleCamera();
     var screenPos = centerPos(cameraPos, false);
     camera.style.left = (screenPos.x) + "px";
     camera.style.top = (screenPos.y) + "px";
@@ -717,17 +869,22 @@ function addVector(vector1, vector2) {
     };
     return added;
 }
-function rotateVector(vector,deltaRad){
+
+function rotateVector(vector, deltaRad) {
     var mag = magnitude(vector);
-    var originalAngle = Math.atan2(vector.y,vector.x);
-    var newAngle = originalAngle+deltaRad;
-    var unitVector = {x:Math.cos(newAngle),y:Math.sin(newAngle)};
-    var scaledVector = setMagnitudeVector(unitVector,mag);
+    var originalAngle = Math.atan2(vector.y, vector.x);
+    var newAngle = originalAngle + deltaRad;
+    var unitVector = {
+        x: Math.cos(newAngle),
+        y: Math.sin(newAngle)
+    };
+    var scaledVector = setMagnitudeVector(unitVector, mag);
     return scaledVector;
-    
+
 }
+
 function normalizeVector(vector) {
-    setMagnitudeVector(vector,1);
+    setMagnitudeVector(vector, 1);
 }
 
 function setMagnitudeVector(vector, targetMagnitude) {
@@ -737,8 +894,8 @@ function setMagnitudeVector(vector, targetMagnitude) {
 
 function centerPos(pos, center = true) {
     var centerFactor = center ? -1 : 1;
-    var halfWidth = document.body.clientWidth / 2;
-    var halfHeight = document.body.clientHeight / 2;
+    var halfWidth = getWindowWidth() / 2;
+    var halfHeight = getWindowHeight() / 2;
     var processedPos = {
         x: pos.x + (halfWidth * centerFactor),
         y: pos.y + (halfHeight * centerFactor)
@@ -911,6 +1068,53 @@ var endSelectPos = {
 };
 var selecting = false;
 
+function closeDragElement() {
+    document.onmouseup = null;
+    document.onmousemove = null;
+    selecting = false;
+    if (queueClear) {
+        clearSelection();
+    }
+    queueClear = false;
+    drawSelection();
+    toolCursorLock = false;
+    centerCamera();
+    render();
+    saveState();
+}
+function centerCamera(){
+     cameraPos = {
+        x: 0,
+        y: 0
+    };
+    shiftElements();   
+}
+function drawSelection() {
+    var selectionBox = document.getElementById("selection");
+    if (selecting) {
+        selectionBox.style.visibility = "visible";
+        var trueStartPos = {
+            x: Math.min(startSelectPos.x, endSelectPos.x),
+            y: Math.min(startSelectPos.y, endSelectPos.y)
+        }
+        var width = Math.abs(startSelectPos.x - endSelectPos.x);
+        var height = Math.abs(startSelectPos.y - endSelectPos.y);
+        selectionBox.style.left = `${trueStartPos.x}px`;
+        selectionBox.style.top = `${trueStartPos.y}px`;
+        selectionBox.style.width = `${width}px`;
+        selectionBox.style.height = `${height}px`;
+        var trueEndPos = {
+            x: trueStartPos.x + width,
+            y: trueStartPos.y + height
+        };
+        selectElementBox(trueStartPos, trueEndPos);
+    } else {
+        selectionBox.style.width = 0;
+        selectionBox.style.height = 0;
+        selectionBox.style.visibility = "hidden";
+    }
+}
+
 function dragElement(elmnt) {
     var pos1 = 0,
         pos2 = 0,
@@ -919,9 +1123,9 @@ function dragElement(elmnt) {
     elmnt.onmousedown = dragMouseDown;
 
     function dragMouseDown(e) {
-        if (keyStates[KeyCode.SHIFT]) {
+        if (keyStates[KeyBinds.MOVE]) {
             e = e || window.event;
-            e.preventDefault();
+            //e.preventDefault();
             document.onmouseup = closeDragElement;
             document.onmousemove = elementDrag;
         }
@@ -929,7 +1133,7 @@ function dragElement(elmnt) {
 
     function elementDrag(e) {
         e = e || window.event;
-        e.preventDefault();
+        //e.preventDefault();
         var nodes = [];
         if (selected.length == 0) {
             var node = getNodeById(elmnt.id);
@@ -952,24 +1156,6 @@ function dragElement(elmnt) {
         }
     }
 
-    function closeDragElement() {
-        document.onmouseup = null;
-        document.onmousemove = null;
-        selecting = false;
-        if (queueClear) {
-            clearSelection();
-        }
-        queueClear = false;
-        drawSelection();
-        var cMouse = centerPos(mousePos);
-        cameraPos = {
-            x: 0,
-            y: 0
-        };
-        shiftElements();
-        render();
-        saveState();
-    }
     document.documentElement.onmousedown = bodyDrag;
 
     function bodyDrag(e) {
@@ -978,11 +1164,13 @@ function dragElement(elmnt) {
             saveState();
             updated = false;
         }
-        if (!keyStates[KeyCode.SHIFT]) {
-            if (e.path[0].tagName != "NODE") {
+        if (!keyStates[KeyBinds.MOVE]) {
+            if (e.path[0].tagName != "NODE" && e.path[1].tagName != "NODE" && e.path[0].tagName != "PRE" && !isDescendant(e.path[0], tools)) {
                 cameraDragMouseDown(e);
+                e.preventDefault();
+                unfocus();
             }
-        } else if (selecting || keyStates[KeyCode.B] || selected.length == 0) {
+        } else if (selecting || keyStates[KeyBinds.BOXSELECT] || selected.length == 0) {
             selectDragMouseDown(e);
         } else if (selected.length > 0) {
             dragMouseDown(e);
@@ -990,6 +1178,7 @@ function dragElement(elmnt) {
     }
 
     function selectDragMouseDown(e) {
+        e.preventDefault();
         nodeCache = getAllNodes();
         selecting = true;
         startSelectPos = {
@@ -997,45 +1186,17 @@ function dragElement(elmnt) {
             y: e.clientY
         };
         document.onmouseup = closeDragElement;
-        document.onmousemove = function (e) {
-            selectDrag(e);
-        }
+        document.onmousemove = selectDrag;
     }
 
     function selectDrag(e) {
+        e.preventDefault();
         endSelectPos = {
             x: e.clientX,
             y: e.clientY
         };
         drawSelection();
 
-    }
-
-    function drawSelection() {
-        var selectionBox = document.getElementById("selection");
-        if (selecting) {
-            selectionBox.style.visibility = "visible";
-            var trueStartPos = {
-                x: Math.min(startSelectPos.x, endSelectPos.x),
-                y: Math.min(startSelectPos.y, endSelectPos.y)
-            }
-            var width = Math.abs(startSelectPos.x - endSelectPos.x);
-            var height = Math.abs(startSelectPos.y - endSelectPos.y);
-            selectionBox.style.left = `${trueStartPos.x}px`;
-            selectionBox.style.top = `${trueStartPos.y}px`;
-            selectionBox.style.width = `${width}px`;
-            selectionBox.style.height = `${height}px`;
-            var trueEndPos = {
-                x: trueStartPos.x + width,
-                y: trueStartPos.y + height
-            };
-            selectElementBox(trueStartPos, trueEndPos);
-        } else {
-            selectionBox.style.width = 0;
-            selectionBox.style.height = 0;
-            selectionBox.style.visibility = "hidden";
-        }
-        unfocus();
     }
 
     function cameraDragMouseDown(e) {
@@ -1074,12 +1235,224 @@ function renderGrid() {
     if (settings.grid) {
         var baseGridHeight = settings.gridSize;
         var baseGridWidth = settings.gridSize;
-        var scaledWidth = (document.body.clientWidth / 2);
-        var scaledHeight = (document.body.clientHeight / 2);
+        var scaledWidth = (getWindowWidth() / 2);
+        var scaledHeight = (getWindowHeight() / 2);
         document.body.style.backgroundSize = `${baseGridWidth*scale}px ${baseGridHeight*scale}px`;
         document.body.style.backgroundPosition = `top ${(-data.camera.position.y*scale)+scaledHeight}px left ${(-data.camera.position.x*scale)+scaledWidth}`;
         document.body.style.backgroundImage = "";
     } else {
         document.body.style.backgroundImage = "none";
     }
+}
+toolsPos = {
+    x: 0,
+    y: 0
+};
+
+function initializeTools() {
+    var width = getWindowWidth();
+    var height = getWindowHeight();
+    var maxDim = Math.max(width, height) * 0.25;
+    tools.onmousedown = toolsMouseDown;
+    tools.onmousemove = toolsMouseMove;
+    tools.style.width = `${maxDim}`;
+    tools.style.height = `${maxDim}`;
+    
+    var tabButtons = document.getElementsByTagName("TABBUTTON");
+            clickTab(tabButtons[0]);
+    toolsRescale();
+    for(var i = 0;i<tabButtons.length;i++){
+        var tabButton = tabButtons[i];
+        var target = tabButton.getAttribute("target");
+        if(target!=null){
+            
+           tabButton.onclick = function(e){ 
+            clickTab(e.path[0]);
+               
+           }
+           }
+    }
+}
+var toolCursorLock = false;
+var toolCursorStyle = "";
+function toolsMouseMove(e){
+    if(!toolCursorLock){
+    var dragConfig = getToolsDragSides(e);
+    var cursorStyle = "";
+    var verticalLetter="";
+    var horizontalLetter="";
+    verticalLetter = dragConfig.bottom ? "s": verticalLetter;
+    verticalLetter = dragConfig.top ? "n": verticalLetter;
+    horizontalLetter = dragConfig.right ? "e":horizontalLetter;
+    horizontalLetter = dragConfig.left ? "w":horizontalLetter;
+    if(verticalLetter.length>0||horizontalLetter.length>0){
+       cursorStyle = `${verticalLetter}${horizontalLetter}-resize`;
+       }
+    toolCursorStyle = cursorStyle;
+    tools.style.cursor = cursorStyle;
+}
+}
+function getToolsDragSides(e){
+        var dragRange = 4;
+        var offX = e.clientX - toolsPos.x;
+    var offY = e.clientY - toolsPos.y;
+            var right = false;
+        var bottom = false;
+        var left = false;
+        var top = false;
+        if (tools.offsetWidth - offX <= dragRange) {
+            right = true;
+        }
+        if (tools.offsetHeight - offY <= dragRange) {
+            bottom = true;
+        }
+        if (offX <= dragRange) {
+            left = true;
+        }
+        if (offY <= dragRange) {
+            top = true;
+        }
+           var dragConfig = {
+            right: right,
+            bottom: bottom,
+            left: left,
+            top: top
+        };
+    return dragConfig;
+}
+function toolsMouseDown(e) {
+    toolCursorLock = true;
+    var offX = e.clientX - toolsPos.x;
+    var offY = e.clientY - toolsPos.y;
+    e.preventDefault();
+    var startPos = mousePos;
+    document.onmouseup = closeDragElement;
+    if (e.path[0].id == "toolsHead"&&toolCursorStyle.length==0) {
+        document.onmousemove = function (e) {
+            toolsDrag(e, startPos)
+        }
+    } else {
+        
+        var dragConfig = getToolsDragSides(e);
+        if (dragConfig.right||dragConfig.bottom||dragConfig.left||dragConfig.top) {
+            document.onmousemove = function (e) {
+                toolsResizeDrag(e, dragConfig)
+            }
+        }
+
+    }
+
+}
+
+function toolsDrag(e, startPos) {
+    var width = getWindowWidth();
+    var height = getWindowHeight();
+    toolsPos.x = clamp(toolsPos.x + e.movementX, 0, width - tools.offsetWidth);
+    toolsPos.y = clamp(toolsPos.y + e.movementY, 0, height - tools.offsetHeight);
+    toolsRender();
+}
+
+function toolsResizeDrag(e, dragConfig) {
+        var width = getWindowWidth();
+    var height = getWindowHeight();
+    var dragX = Math.max(0,e.clientX);
+    var dragY = Math.max(0,e.clientY);
+
+    if (dragConfig.right) {
+        tools.style.width = `${clampToolWidth(dragX-toolsPos.x)}px`;
+    }
+    if (dragConfig.bottom) {
+        tools.style.height = `${clampToolHeight(dragY-toolsPos.y)}px`;
+    }
+    if (dragConfig.left) {
+        var oldWidth = tools.clientWidth;
+        tools.style.width = `${clampToolWidth(tools.clientWidth+toolsPos.x-dragX)}px`;
+        toolsPos.x = clamp(toolsPos.x - (tools.clientWidth - oldWidth), 0, width - tools.offsetWidth);
+    }
+    if (dragConfig.top) {
+        var oldHeight = tools.clientHeight;
+        tools.style.height = `${clampToolHeight(tools.clientHeight+toolsPos.y-dragY)}px`;
+        toolsPos.y = clamp(toolsPos.y - (tools.clientHeight - oldHeight), 0, height - tools.offsetHeight);
+    }
+    toolsRender();
+}
+function getToolsMinMax(){
+            var width = getWindowWidth();
+    var height = getWindowHeight();
+    var maxDim = Math.max(width, height);
+    var minDim = maxDim*0.1;
+    return {min:minDim,max:maxDim};
+}
+function clampToolWidth(width){
+        var dim = getToolsMinMax();
+    return clamp(width,dim.min,dim.max);
+}
+function clampToolHeight(height){
+        var dim = getToolsMinMax();
+    return clamp(height,dim.min+toolsHead.offsetHeight,dim.max);
+}
+function correctToolSize(){
+    var width = currentTab.getAttribute("width");
+    var height = currentTab.getAttribute("height");
+           var widthOffset = width-toolsBody.offsetWidth;
+        var heightOffset = height-toolsBody.offsetHeight;
+    console.log(heightOffset);
+    if(widthOffset!=null){
+            tools.style.width = clampToolWidth(tools.clientWidth+widthOffset);
+       }
+    if(heightOffset!=null){
+    tools.style.height = clampToolHeight(tools.clientHeight+heightOffset);
+       }
+}
+
+function toolsRescale(xScale = 1,yScale = 1){
+    var dim = getToolsMinMax();
+    console.log(xScale+" "+yScale);
+    toolsPos.x*=xScale;
+    toolsPos.y*=yScale;
+    
+    tools.style.width = clampToolWidth(tools.clientWidth*xScale);
+    tools.style.height = clampToolHeight(tools.clientHeight*yScale);
+    toolsRender();
+}
+function toolsRender() {
+    tools.style.top = `${toolsPos.y}px`;
+    tools.style.left = `${toolsPos.x}px`;
+}
+function clickTab(element){
+            var name = element.getAttribute("target");  
+    switchTab(name);
+        var tabButtons = document.getElementsByTagName("TABBUTTON");
+    for(var i = 0;i<tabButtons.length;i++){
+        var tabButton = tabButtons[i];
+        if(tabButton==element){
+           tabButton.className = "selectedTab";
+           }
+        else{
+          tabButton.className = "";  
+        }
+    }
+}
+var currentTab;
+function switchTab(name){
+    var tabs = document.getElementsByTagName("TAB");
+    for(var i = 0;i<tabs.length;i++){
+        var tab = tabs[i];
+        if(tab.getAttribute("name")==name){
+           tab.setAttribute("class","visible");
+            currentTab = tab;
+            correctToolSize();
+           }
+        else{
+            tab.setAttribute("class","invisible");
+        }
+    }
+}
+function scaleTab(){
+    var scaleX = toolsBody.offsetWidth/currentTab.offsetWidth;
+    var scaleY = toolsBody.offsetHeight/(currentTab.offsetHeight+toolsHead.offsetHeight);
+    var minScale = Math.min(scaleX,scaleY);
+    currentTab.style.transform = `scale(${minScale})`;
+
+    
 }

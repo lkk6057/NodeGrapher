@@ -1,25 +1,83 @@
 <html>
+   <head>
+      <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+      <script src="https://kit.fontawesome.com/c8b450094c.js" crossorigin="anonymous"></script>
+      <link rel="stylesheet" href="styles.css">
+      <script src="src/index.js"></script>
+   </head>
+   <body>
+      <div id = "main" class = "main">
+         <div id = "tools" class = "tools">
+            <div id = "toolsHead" class = "toolsHead">
+                <span class = "toolsTitle">Tools</span>
+                <div class = "tabShelf">
+                    
+                    
+                    <tabButton target = "tools">Tools</tabButton>
+                    <tabButton target = "options">Options</tabButton>
+                    <tabButton target = "controls">Controls</tabButton>
+                    <tabButton>Extra2</tabButton>
+                
+                </div>
+             </div>
+            <div id = "toolsBody" class = "toolsBody">
+               <tab name = "tools" class = "invisible" width = 450 height = 450>
 
-<head>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
-    <link rel="stylesheet" href="styles.css">
-    <script src="src/index.js"></script>
-</head>
-
-
-<body>
-<div id = "main" class = "main">
-<div id = "chart" class = "chart">
-<camera id = "camera" class = "camera">
-    <div id = "elements" class = "elements"></div>
-    <div id = "effects" class = "effects">
-    </div>
-    </camera>
-    
-    </div>
-<div class = "selection" id = "selection">
-    </div>
-</div>
-</body>
-
+               </tab>
+                <tab name = "options" class = "invisible" width = 450 height = 450>
+                    options
+               </tab>
+                <tab name = "controls" class = "invisible"  width = 600 height = 450>                      
+    <div>
+                                     <div class = "controlGroup">
+                   
+                             <p>Selection Controls:</p>
+                    <control>Single Select: Shift + <i class="fas fa-mouse"></i> Click</control>
+                    <control>Box Select: Shift + <i class="fas fa-mouse"></i> Drag</control>
+                    <control>Select All: A</control>
+                   
+                   
+                   
+                   </div>                 <div class = "controlGroup">
+                   
+                             <p>Selection Controls:</p>
+                    <control>Single Select: Shift + <i class="fas fa-mouse"></i> Click</control>
+                    <control>Box Select: Shift + <i class="fas fa-mouse"></i> Drag</control>
+                    <control>Select All: A</control>
+                   
+                   
+                   
+        </div>        </div><div>         <div class = "controlGroup">
+                   
+                             <p>Selection Controls:</p>
+                    <control>Single Select: Shift + <i class="fas fa-mouse"></i> Click</control>
+                    <control>Box Select: Shift + <i class="fas fa-mouse"></i> Drag</control>
+                    <control>Select All: A</control>
+                   
+                   
+                   
+                        </div>                 <div class = "controlGroup">
+                   
+                             <p>Selection Controls:</p>
+                    <control>Single Select: Shift + <i class="fas fa-mouse"></i> Click</control>
+                    <control>Box Select: Shift + <i class="fas fa-mouse"></i> Drag</control>
+                    <control>Select All: A</control>
+                   
+                   
+                   
+                    </div></div>
+                </tab>
+            </div>
+         </div>
+         <div id = "chart" class = "chart">
+            <camera id = "camera" class = "camera">
+               <div id = "elements" class = "elements"></div>
+               <div id = "effects" class = "effects">
+               </div>
+            </camera>
+         </div>
+         <div class = "selection" id = "selection">
+         </div>
+      </div>
+   </body>
 </html>

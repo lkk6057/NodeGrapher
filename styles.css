@@ -1,35 +1,37 @@
 .main {
-font-family: Tahoma, sans-serif;
-font-size:20px;
+	font-family: Tahoma, sans-serif;
+	font-size: 20px;
 }
 
 .chart {
-    //background-color:blue;
-    height:100%;
-    width:100%
-        
+	//background-color:blue;
+	height: 100%;
+	width: 100%
 }
-.absolute{
-    position:absolute;
-    
+
+.absolute {
+	position: absolute;
 }
-.camera{
-    position: absolute;
-    width:1000000%;
-    transform-origin: top left;
-    height:1000000%;
+
+.camera {
+	position: absolute;
+	width: 1000000%;
+	transform-origin: top left;
+	height: 1000000%;
 }
-node{
-    text-align: center;
-    padding:0.2em;
-    border-radius:0.5em;
-    border: 1px solid black;
-    transform: translate(-50%,-50%) !important;
-    background-color: white;
+
+node {
+	text-align: center;
+	padding: 0.2em;
+	border-radius: 0.5em;
+	border: 1px solid black;
+	transform: translate(-50%, -50%) !important;
+	background-color: white;
 }
-.selected{
-    border: 3px solid cyan;
-  background-color: rgba(217, 245, 255,1) !important;
+
+.selected {
+	border: 3px solid cyan;
+	background-color: rgba(217, 245, 255, 1) !important;
 	animation: border-pulsate 1s infinite, pulse 1s infinite;
 }
 
@@ -38,50 +40,132 @@ node{
 		transform: scale(0.95);
 		box-shadow: 0 0 0 0 rgba(0, 79, 152, 0.7);
 	}
-
 	70% {
 		transform: scale(1);
 		box-shadow: 0 0 0 10px rgba(0, 79, 152, 0);
 	}
-
 	100% {
 		transform: scale(0.95);
 		box-shadow: 0 0 0 0 rgba(0, 79, 152, 0);
 	}
 }
+
 @keyframes border-pulsate {
-    0%   { border-color: rgba(0, 150, 255, 0); }
-    50% { border-color: rgba(0, 150, 255, 0); }
-    100%   { border-color: rgba(0, 150, 255, 1); }
+	0% {
+		border-color: rgba(0, 150, 255, 0);
+	}
+	50% {
+		border-color: rgba(0, 150, 255, 0);
+	}
+	100% {
+		border-color: rgba(0, 150, 255, 1);
+	}
 }
-.selection{
-    position: fixed;
-    background-color: rgba(51,144,255,0.5);
-    border: dashed 3px rgba(217, 245, 255,0.8);
+
+.selection {
+	position: fixed;
+	background-color: rgba(51, 144, 255, 0.5);
+	border: dashed 3px rgba(217, 245, 255, 0.8);
 }
-body{
-    margin:0;
+
+body {
+	margin: 0;
+	overflow: hidden;
+	background-image: linear-gradient(to right, lightgray 1px, transparent 1px), linear-gradient(to bottom, lightgray 1px, transparent 1px);
+}
+
+pre {
+	font-family: Tahoma, sans-serif;
+	white-space: pre-line;
+	padding-right: 1em;
+	padding-left: 1em;
+	user-select: none;
+}
+
+line {
+	position: absolute;
+	background-color: black;
+	transform-origin: left;
+	z-index: -1;
+}
+
+.effects {
+	position: absolute;
+}
+
+.tools {
+	border: 1px solid black;
+	position: absolute;
+	background-color: white;
+	z-index: 2;
+	align-content: center;
     overflow:hidden;
-  background-image:
-    linear-gradient(to right, lightgray 1px, transparent 1px),
-    linear-gradient(to bottom, lightgray 1px, transparent 1px);
 }
-pre{
-    font-family: Tahoma, sans-serif;
-  white-space: pre-line;
-    padding-right:1em;
-    padding-left:1em;
-user-select: none;
+
+.toolsHead {
+	width: 100%;
+	background-color: #5e60ce;
+	text-align: center;
+	color: white;
+
 }
-line{
+
+.toolsTitle {
+	font-size: 3em;
+}
+
+.toolsBody {
+    bottom:0;
+    display:flex;
+    height:80%;
+flex-wrap: wrap;
+}
+
+.tabShelf {
+    width:100%;
+	justify-content: center;
+	display: flex;
+}
+
+tabButton {
+	box-sizing: content-box;
+	padding: 0.5em;
+	flex-grow: 1;
+    flex-basis:20%;
+	background-color: #4ea8de;
+	text-align: center;
+	border: 1px solid #5390d9;
+}
+
+.selectedTab {
+	background-color: transparent;
+	border: 1px solid transparent;
+}
+
+tab {
     position:absolute;
-    height: 3px;
-    width:800px;
-    border-radius:2em;
-    background-color: black;
-    transform-origin: left;
-    z-index: -1;
 }
-.effects{
-    position:absolute;
+control{
+    	outline: 1px solid black;
+    border-radius: 0.5em;
+    padding:0.5em;
+    display: block;
+}
+.controlGroup{
+    text-align: center;
+        	border: 1px solid black;
+    border-radius: 0.5em;
+    padding:0.5em;
+    display:inline-block;
+    white-space: nowrap;
+}
+i{
+    color:gray;
+}
+.visible {
+	visibility: visible;
+}
+
+.invisible {
+	visibility: hidden;
 }
