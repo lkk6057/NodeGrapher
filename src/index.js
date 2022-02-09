@@ -104,18 +104,24 @@ function initializeDocument() {
     window.addEventListener("unload", saveCamera);
 
     window.addEventListener("blur", unfocusWindow);
-    
-    window.addEventListener("resize",resizeWindow);
+
+    window.addEventListener("resize", resizeWindow);
     document.onwheel = zoom;
 
-    windowSize = {width:getWindowWidth(),height:getWindowHeight()};
+    windowSize = {
+        width: getWindowWidth(),
+        height: getWindowHeight()
+    };
 }
-function getWindowWidth(){
+
+function getWindowWidth() {
     return window.innerWidth;
 }
-function getWindowHeight(){
+
+function getWindowHeight() {
     return window.innerHeight
 }
+
 function initializeKeybinds() {
     var isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
     if (isMac) {
@@ -129,17 +135,18 @@ function unfocusWindow(e) {
     keyStates = [];
 }
 var windowSize;
-function resizeWindow(e){
+
+function resizeWindow(e) {
     centerCamera();
     var width = getWindowWidth();
     var height = getWindowHeight();
-    var xScale = width/windowSize.width;
-    var yScale = height/windowSize.height;
+    var xScale = width / windowSize.width;
+    var yScale = height / windowSize.height;
     windowSize.width = width;
-    windowSize.height =height;
-    toolsRescale(xScale,yScale);
-    
+    windowSize.height = height;
+
 }
+
 function zoom(event) {
     if (!nodeFocused()) {
         var delta = event.deltaY;
@@ -1082,13 +1089,15 @@ function closeDragElement() {
     render();
     saveState();
 }
-function centerCamera(){
-     cameraPos = {
+
+function centerCamera() {
+    cameraPos = {
         x: 0,
         y: 0
     };
-    shiftElements();   
+    shiftElements();
 }
+
 function drawSelection() {
     var selectionBox = document.getElementById("selection");
     if (selecting) {
@@ -1257,69 +1266,71 @@ function initializeTools() {
     tools.onmousemove = toolsMouseMove;
     tools.style.width = `${maxDim}`;
     tools.style.height = `${maxDim}`;
-    
+
     var tabButtons = document.getElementsByTagName("TABBUTTON");
-            clickTab(tabButtons[0]);
-    toolsRescale();
-    for(var i = 0;i<tabButtons.length;i++){
+    clickTab(tabButtons[0]);
+    for (var i = 0; i < tabButtons.length; i++) {
         var tabButton = tabButtons[i];
         var target = tabButton.getAttribute("target");
-        if(target!=null){
-            
-           tabButton.onclick = function(e){ 
-            clickTab(e.path[0]);
-               
-           }
-           }
+        if (target != null) {
+
+            tabButton.onclick = function (e) {
+                clickTab(e.path[0]);
+
+            }
+        }
     }
 }
 var toolCursorLock = false;
 var toolCursorStyle = "";
-function toolsMouseMove(e){
-    if(!toolCursorLock){
-    var dragConfig = getToolsDragSides(e);
-    var cursorStyle = "";
-    var verticalLetter="";
-    var horizontalLetter="";
-    verticalLetter = dragConfig.bottom ? "s": verticalLetter;
-    verticalLetter = dragConfig.top ? "n": verticalLetter;
-    horizontalLetter = dragConfig.right ? "e":horizontalLetter;
-    horizontalLetter = dragConfig.left ? "w":horizontalLetter;
-    if(verticalLetter.length>0||horizontalLetter.length>0){
-       cursorStyle = `${verticalLetter}${horizontalLetter}-resize`;
-       }
-    toolCursorStyle = cursorStyle;
-    tools.style.cursor = cursorStyle;
+
+function toolsMouseMove(e) {
+    if (!toolCursorLock) {
+        var dragConfig = getToolsDragSides(e);
+        var cursorStyle = "";
+        var verticalLetter = "";
+        var horizontalLetter = "";
+        verticalLetter = dragConfig.bottom ? "s" : verticalLetter;
+        verticalLetter = dragConfig.top ? "n" : verticalLetter;
+        horizontalLetter = dragConfig.right ? "e" : horizontalLetter;
+        horizontalLetter = dragConfig.left ? "w" : horizontalLetter;
+        if (verticalLetter.length > 0 || horizontalLetter.length > 0) {
+            cursorStyle = `${verticalLetter}${horizontalLetter}-resize`;
+        }
+        toolCursorStyle = cursorStyle;
+        tools.style.cursor = cursorStyle;
+    }
 }
-}
-function getToolsDragSides(e){
-        var dragRange = 4;
-        var offX = e.clientX - toolsPos.x;
+
+function getToolsDragSides(e) {
+    var dragRange = 4;
+    var offX = e.clientX - toolsPos.x;
     var offY = e.clientY - toolsPos.y;
-            var right = false;
-        var bottom = false;
-        var left = false;
-        var top = false;
-        if (tools.offsetWidth - offX <= dragRange) {
-            right = true;
-        }
-        if (tools.offsetHeight - offY <= dragRange) {
-            bottom = true;
-        }
-        if (offX <= dragRange) {
-            left = true;
-        }
-        if (offY <= dragRange) {
-            top = true;
-        }
-           var dragConfig = {
-            right: right,
-            bottom: bottom,
-            left: left,
-            top: top
-        };
+    var right = false;
+    var bottom = false;
+    var left = false;
+    var top = false;
+    if (tools.offsetWidth - offX <= dragRange) {
+        right = true;
+    }
+    if (tools.offsetHeight - offY <= dragRange) {
+        bottom = true;
+    }
+    if (offX <= dragRange) {
+        left = true;
+    }
+    if (offY <= dragRange) {
+        top = true;
+    }
+    var dragConfig = {
+        right: right,
+        bottom: bottom,
+        left: left,
+        top: top
+    };
     return dragConfig;
 }
+
 function toolsMouseDown(e) {
     toolCursorLock = true;
     var offX = e.clientX - toolsPos.x;
@@ -1327,14 +1338,14 @@ function toolsMouseDown(e) {
     e.preventDefault();
     var startPos = mousePos;
     document.onmouseup = closeDragElement;
-    if (e.path[0].id == "toolsHead"&&toolCursorStyle.length==0) {
+    if (e.path[0].id == "toolsHead" && toolCursorStyle.length == 0) {
         document.onmousemove = function (e) {
             toolsDrag(e, startPos)
         }
     } else {
-        
+
         var dragConfig = getToolsDragSides(e);
-        if (dragConfig.right||dragConfig.bottom||dragConfig.left||dragConfig.top) {
+        if (dragConfig.right || dragConfig.bottom || dragConfig.left || dragConfig.top) {
             document.onmousemove = function (e) {
                 toolsResizeDrag(e, dragConfig)
             }
@@ -1353,10 +1364,10 @@ function toolsDrag(e, startPos) {
 }
 
 function toolsResizeDrag(e, dragConfig) {
-        var width = getWindowWidth();
+    var width = getWindowWidth();
     var height = getWindowHeight();
-    var dragX = Math.max(0,e.clientX);
-    var dragY = Math.max(0,e.clientY);
+    var dragX = Math.max(0, e.clientX);
+    var dragY = Math.max(0, e.clientY);
 
     if (dragConfig.right) {
         tools.style.width = `${clampToolWidth(dragX-toolsPos.x)}px`;
@@ -1376,83 +1387,67 @@ function toolsResizeDrag(e, dragConfig) {
     }
     toolsRender();
 }
-function getToolsMinMax(){
-            var width = getWindowWidth();
+
+function getToolsMinMax() {
+    var width = getWindowWidth();
     var height = getWindowHeight();
     var maxDim = Math.max(width, height);
-    var minDim = maxDim*0.1;
-    return {min:minDim,max:maxDim};
-}
-function clampToolWidth(width){
-        var dim = getToolsMinMax();
-    return clamp(width,dim.min,dim.max);
-}
-function clampToolHeight(height){
-        var dim = getToolsMinMax();
-    return clamp(height,dim.min+toolsHead.offsetHeight,dim.max);
-}
-function correctToolSize(){
-    var width = currentTab.getAttribute("width");
-    var height = currentTab.getAttribute("height");
-           var widthOffset = width-toolsBody.offsetWidth;
-        var heightOffset = height-toolsBody.offsetHeight;
-    console.log(heightOffset);
-    if(widthOffset!=null){
-            tools.style.width = clampToolWidth(tools.clientWidth+widthOffset);
-       }
-    if(heightOffset!=null){
-    tools.style.height = clampToolHeight(tools.clientHeight+heightOffset);
-       }
+    var minDim = maxDim * 0.1;
+    return {
+        min: minDim,
+        max: maxDim
+    };
 }
 
-function toolsRescale(xScale = 1,yScale = 1){
+function clampToolWidth(width) {
     var dim = getToolsMinMax();
-    console.log(xScale+" "+yScale);
-    toolsPos.x*=xScale;
-    toolsPos.y*=yScale;
-    
-    tools.style.width = clampToolWidth(tools.clientWidth*xScale);
-    tools.style.height = clampToolHeight(tools.clientHeight*yScale);
-    toolsRender();
+    return clamp(width, dim.min, dim.max);
 }
+
+function clampToolHeight(height) {
+    var dim = getToolsMinMax();
+    return clamp(height, dim.min + toolsHead.offsetHeight, dim.max);
+}
+
+
 function toolsRender() {
     tools.style.top = `${toolsPos.y}px`;
     tools.style.left = `${toolsPos.x}px`;
 }
-function clickTab(element){
-            var name = element.getAttribute("target");  
+
+function clickTab(element) {
+    var name = element.getAttribute("target");
     switchTab(name);
-        var tabButtons = document.getElementsByTagName("TABBUTTON");
-    for(var i = 0;i<tabButtons.length;i++){
+    var tabButtons = document.getElementsByTagName("TABBUTTON");
+    for (var i = 0; i < tabButtons.length; i++) {
         var tabButton = tabButtons[i];
-        if(tabButton==element){
-           tabButton.className = "selectedTab";
-           }
-        else{
-          tabButton.className = "";  
+        if (tabButton == element) {
+            tabButton.className = "selectedTab";
+        } else {
+            tabButton.className = "";
         }
     }
 }
 var currentTab;
-function switchTab(name){
+
+function switchTab(name) {
     var tabs = document.getElementsByTagName("TAB");
-    for(var i = 0;i<tabs.length;i++){
+    for (var i = 0; i < tabs.length; i++) {
         var tab = tabs[i];
-        if(tab.getAttribute("name")==name){
-           tab.setAttribute("class","visible");
+        if (tab.getAttribute("name") == name) {
+            tab.setAttribute("class", "visible");
             currentTab = tab;
-            correctToolSize();
-           }
-        else{
-            tab.setAttribute("class","invisible");
+        } else {
+            tab.setAttribute("class", "invisible");
         }
     }
 }
-function scaleTab(){
-    var scaleX = toolsBody.offsetWidth/currentTab.offsetWidth;
-    var scaleY = toolsBody.offsetHeight/(currentTab.offsetHeight+toolsHead.offsetHeight);
-    var minScale = Math.min(scaleX,scaleY);
+
+function scaleTab() {
+    var scaleX = toolsBody.offsetWidth / currentTab.offsetWidth;
+    var scaleY = toolsBody.offsetHeight / (currentTab.offsetHeight + toolsHead.offsetHeight);
+    var minScale = Math.min(scaleX, scaleY);
     currentTab.style.transform = `scale(${minScale})`;
 
-    
+
 }
