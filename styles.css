@@ -144,6 +144,7 @@ tabButton {
 
 tab {
     position:absolute;
+    
 }
 control{
     	outline: 1px solid black;
@@ -158,6 +159,7 @@ control{
     padding:0.5em;
     display:inline-block;
     white-space: nowrap;
+    margin:1em;
 }
 i{
     color:gray;

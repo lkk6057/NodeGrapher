@@ -115,11 +115,11 @@ function initializeDocument() {
 }
 
 function getWindowWidth() {
-    return window.innerWidth;
+    return document.documentElement.clientWidth;
 }
 
 function getWindowHeight() {
-    return window.innerHeight
+    return document.documentElement.clientHeight;
 }
 
 function initializeKeybinds() {
@@ -1304,22 +1304,24 @@ function toolsMouseMove(e) {
 
 function getToolsDragSides(e) {
     var dragRange = 4;
-    var offX = e.clientX - toolsPos.x;
-    var offY = e.clientY - toolsPos.y;
+    var dragRangeX = pxToVW(dragRange);
+    var dragRangeY = pxToVH(dragRange);
+    var offX = pxToVW(e.clientX)-toolsPos.x;
+    var offY = pxToVH(e.clientY)-toolsPos.y;
     var right = false;
     var bottom = false;
     var left = false;
     var top = false;
-    if (tools.offsetWidth - offX <= dragRange) {
+    if (pxToVW(tools.offsetWidth) - offX <= dragRangeX) {
         right = true;
     }
-    if (tools.offsetHeight - offY <= dragRange) {
+    if (pxToVH(tools.offsetHeight) - offY <= dragRangeY) {
         bottom = true;
     }
-    if (offX <= dragRange) {
+    if (offX <= dragRangeX) {
         left = true;
     }
-    if (offY <= dragRange) {
+    if (offY <= dragRangeY) {
         top = true;
     }
     var dragConfig = {
@@ -1338,7 +1340,7 @@ function toolsMouseDown(e) {
     e.preventDefault();
     var startPos = mousePos;
     document.onmouseup = closeDragElement;
-    if (e.path[0].id == "toolsHead" && toolCursorStyle.length == 0) {
+    if (isDescendant(e.path[0],document.getElementById("toolsHead"),2) && toolCursorStyle.length == 0) {
         document.onmousemove = function (e) {
             toolsDrag(e, startPos)
         }
@@ -1356,46 +1358,62 @@ function toolsMouseDown(e) {
 }
 
 function toolsDrag(e, startPos) {
-    var width = getWindowWidth();
-    var height = getWindowHeight();
-    toolsPos.x = clamp(toolsPos.x + e.movementX, 0, width - tools.offsetWidth);
-    toolsPos.y = clamp(toolsPos.y + e.movementY, 0, height - tools.offsetHeight);
+    var deltaX = pxToVW(e.movementX);
+    var deltaY = pxToVH(e.movementY);
+    repositionTools(toolsPos.x + deltaX, toolsPos.y + deltaY);
     toolsRender();
+}
+
+function repositionTools(x = null, y = null) {
+    if (x != null) {
+        repositionToolsX(x);
+    }
+    if (y != null) {
+        repositionToolsY(y);
+    }
+}
+
+function repositionToolsX(x) {
+    var width = getWindowWidth();
+    toolsPos.x = clamp(x, 0, pxToVW(width - tools.offsetWidth));
+}
+
+function repositionToolsY(y) {
+    var height = getWindowHeight();
+    toolsPos.y = clamp(y, 0, pxToVH(height - tools.offsetHeight));
 }
 
 function toolsResizeDrag(e, dragConfig) {
     var width = getWindowWidth();
     var height = getWindowHeight();
-    var dragX = Math.max(0, e.clientX);
-    var dragY = Math.max(0, e.clientY);
+    var dragX = pxToVMin(Math.max(0, e.clientX));
+    var dragY = pxToVMin(Math.max(0, e.clientY));
 
     if (dragConfig.right) {
-        tools.style.width = `${clampToolWidth(dragX-toolsPos.x)}px`;
+        tools.style.width = `${clampToolWidth(dragX-pxToVMin(toolsPos.x*getVW()))}vmin`;
     }
     if (dragConfig.bottom) {
-        tools.style.height = `${clampToolHeight(dragY-toolsPos.y)}px`;
+        tools.style.height = `${clampToolHeight(dragY-pxToVMin(toolsPos.y*getVH()))}vmin`;
     }
     if (dragConfig.left) {
-        var oldWidth = tools.clientWidth;
-        tools.style.width = `${clampToolWidth(tools.clientWidth+toolsPos.x-dragX)}px`;
-        toolsPos.x = clamp(toolsPos.x - (tools.clientWidth - oldWidth), 0, width - tools.offsetWidth);
+        var oldWidth = pxToVMin(tools.clientWidth);
+        var widthVmin = clampToolWidth(pxToVMin(tools.clientWidth) + pxToVMin(toolsPos.x*getVW()) - dragX);
+        tools.style.width = `${widthVmin}vmin`;
+        repositionToolsX(toolsPos.x - pxToVW((pxToVMin(tools.clientWidth) - oldWidth)*getVMin()));
     }
     if (dragConfig.top) {
-        var oldHeight = tools.clientHeight;
-        tools.style.height = `${clampToolHeight(tools.clientHeight+toolsPos.y-dragY)}px`;
-        toolsPos.y = clamp(toolsPos.y - (tools.clientHeight - oldHeight), 0, height - tools.offsetHeight);
+        var oldHeight = pxToVMin(tools.clientHeight);
+        var heightVmin = clampToolHeight(pxToVMin(tools.clientHeight) + pxToVMin(toolsPos.y*getVH()) - dragY);
+        tools.style.height = `${heightVmin}vmin`;
+        repositionToolsY(toolsPos.y - pxToVH((pxToVMin(tools.clientHeight) - oldHeight)*getVMin()));
     }
     toolsRender();
 }
 
 function getToolsMinMax() {
-    var width = getWindowWidth();
-    var height = getWindowHeight();
-    var maxDim = Math.max(width, height);
-    var minDim = maxDim * 0.1;
     return {
-        min: minDim,
-        max: maxDim
+        min: 5,
+        max: 10000
     };
 }
 
@@ -1406,13 +1424,49 @@ function clampToolWidth(width) {
 
 function clampToolHeight(height) {
     var dim = getToolsMinMax();
-    return clamp(height, dim.min + toolsHead.offsetHeight, dim.max);
+    return clamp(height, dim.min + pxToVMin(toolsHead.offsetHeight), dim.max);
+}
+function getVMin(){
+        var min = Math.min(getWindowWidth(), getWindowHeight());
+    var vMin = min / 100;
+    return vMin;
+}
+function getVMax(){
+        var max = Math.max(getWindowWidth(), getWindowHeight());
+    var vMin = max / 100;
+    return vMax;
+}
+function getVW(){
+        var width = getWindowWidth();
+    var vW = width/100;
+    return vW;
+}
+function getVH(){
+        var height = getWindowHeight();
+    var vH = height/100;
+    return vH;
+}
+function pxToVMin(px) {
+    return px / getVMin();
+}
+function pxToVW(px){
+    return px/getVW();
+}
+function pxToVH(px){
+    return px/getVH();
 }
 
-
 function toolsRender() {
-    tools.style.top = `${toolsPos.y}px`;
-    tools.style.left = `${toolsPos.x}px`;
+    tools.style.top = `${toolsPos.y}vh`;
+    tools.style.left = `${toolsPos.x}vw`;
+}
+
+function correctToolScale() {
+    var height = Number(currentTab.getAttribute("height"));
+    var width = Number(currentTab.getAttribute("width"));
+    tools.style.width = `${width}vmin`;
+    var headHeight = pxToVMin(toolsHead.offsetHeight);
+    tools.style.height = `${headHeight+height}vmin`;
 }
 
 function clickTab(element) {
@@ -1437,17 +1491,9 @@ function switchTab(name) {
         if (tab.getAttribute("name") == name) {
             tab.setAttribute("class", "visible");
             currentTab = tab;
+            correctToolScale();
         } else {
             tab.setAttribute("class", "invisible");
         }
     }
-}
-
-function scaleTab() {
-    var scaleX = toolsBody.offsetWidth / currentTab.offsetWidth;
-    var scaleY = toolsBody.offsetHeight / (currentTab.offsetHeight + toolsHead.offsetHeight);
-    var minScale = Math.min(scaleX, scaleY);
-    currentTab.style.transform = `scale(${minScale})`;
-
-
 }
