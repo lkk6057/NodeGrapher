@@ -144,7 +144,8 @@ function resizeWindow(e) {
     var yScale = height / windowSize.height;
     windowSize.width = width;
     windowSize.height = height;
-
+    repositionTools();
+    toolsRender();
 }
 
 function zoom(event) {
@@ -659,28 +660,49 @@ function renderLines(node) {
 
 function renderLine(node, targetNode) {
     var lineName = node.id + "/" + targetNode.id + "line";
-    removeElementsByName(lineName);
+    //removeElementsByName(lineName);
     var offset = {
         x: targetNode.position.x - node.position.x,
         y: targetNode.position.y - node.position.y
     };
-    var line = generateLineElement(offset, node.position);
-    line.setAttribute("name", lineName);
+    var line = updateLineElement(lineName,offset, node.position);
     effectsElement.appendChild(line);
 }
 
-function generateLineElement(offset, pos, color = "black", thickness = 3) {
-    var line = document.createElement("LINE");
-    var length = magnitude(offset);
-    var angle = Math.atan2(offset.y, offset.x);
-    line.style.width = `${length}px`;
-    line.style.height = `${thickness}px`;
-    line.style.top = `${pos.y}px`;
-    line.style.left = `${pos.x}px`;
-    line.style.transform = `rotate(${angle}rad)`;
+function updateLineElement(name,offset, pos, color = "black", thickness = 1) {
+    var attributes = generateLineAttributes(offset,pos,color,thickness);
+    var matches = document.getElementsByName(name);
+    var line;
+    if(matches.length==1){
+        line = matches[0];
+            }
+    else if(matches.length>1){
+        removeElementsByName(name);
+    }
+    
+        if(matches.length==0){
+        line = document.createElement("LINE");
+            console.log("gen");
+       }
+    line.setAttribute("name",name);
+    line.style.width =  attributes.width ;
+    line.style.height = attributes.height;
+    line.style.top = attributes.top;
+    line.style.left = attributes.left;
+    line.style.transform = attributes.transform;
     return line;
 }
-
+function generateLineAttributes(offset, pos, color, thickness) {
+    var attributes = {};
+    var length = magnitude(offset);
+    var angle = Math.atan2(offset.y, offset.x);
+    attributes.width = `${length}px`;
+    attributes.height = `${thickness}px`;
+    attributes.top = `${pos.y}px`;
+    attributes.left = `${pos.x}px`;
+    attributes.transform = `rotate(${angle}rad)`;
+    return attributes;
+}
 function repositionElements() {
     renderCamera();
 }
@@ -688,8 +710,8 @@ function repositionElements() {
 function load() {
 
     var origin = generateTextNode("origin");
-    var area = 2000;
-    for (var i = 0; i < 50; i++) {
+    var area = 200;
+    for (var i = 0; i < 5; i++) {
         var x = getRandomInt(-area, area);
         var y = getRandomInt(-area, area);
         var position = {
@@ -722,8 +744,8 @@ function scaleCamera() {
 function renderCamera() {
     scaleCamera();
     var screenPos = centerPos(cameraPos, false);
-    camera.style.left = (screenPos.x) + "px";
-    camera.style.top = (screenPos.y) + "px";
+    camera.style.left = pxToVMin(screenPos.x) + "vmin";
+    camera.style.top = pxToVMin(screenPos.y) + "vmin";
 }
 
 function shiftElements() {
@@ -815,7 +837,7 @@ function generateNodeElement(node) {
             }, false);
             break;
     }
-    nodeEle.className = "absolute";
+    nodeEle.className = "absolute card";
     var nodeScreenPos = worldToScreenPos(node.position);
     nodeEle.style.left = nodeScreenPos.x + "px";
     nodeEle.style.top = nodeScreenPos.y + "px";
@@ -923,8 +945,7 @@ function editedText(event) {
     var node = getNodeById(ele.id);
     if (node != null) {
 
-        var breaks = (ele.innerText.match(/\n/g) || []).length;
-        var unescaped = formatNodeText(ele.innerText);
+        var unescaped = ele.innerText;
         console.log(unescaped);
         node.data.text = unescaped;
         updated = true;
@@ -1174,7 +1195,7 @@ function dragElement(elmnt) {
             updated = false;
         }
         if (!keyStates[KeyBinds.MOVE]) {
-            if (e.path[0].tagName != "NODE" && e.path[1].tagName != "NODE" && e.path[0].tagName != "PRE" && !isDescendant(e.path[0], tools)) {
+            if (getNodeParent(e.path[0])==null && !isDescendant(e.path[0], tools)||keyStates[KeyBinds.CTRL]) {
                 cameraDragMouseDown(e);
                 e.preventDefault();
                 unfocus();
@@ -1364,7 +1385,7 @@ function toolsDrag(e, startPos) {
     toolsRender();
 }
 
-function repositionTools(x = null, y = null) {
+function repositionTools(x = toolsPos.x, y = toolsPos.y) {
     if (x != null) {
         repositionToolsX(x);
     }
@@ -1397,34 +1418,30 @@ function toolsResizeDrag(e, dragConfig) {
     }
     if (dragConfig.left) {
         var oldWidth = pxToVMin(tools.clientWidth);
-        var widthVmin = clampToolWidth(pxToVMin(tools.clientWidth) + pxToVMin(toolsPos.x*getVW()) - dragX);
+        var widthVmin = clampToolWidth(pxToVMin(tools.clientWidth) + pxToVMin(toolsPos.x*getVW()) - dragX,false);
         tools.style.width = `${widthVmin}vmin`;
         repositionToolsX(toolsPos.x - pxToVW((pxToVMin(tools.clientWidth) - oldWidth)*getVMin()));
     }
     if (dragConfig.top) {
         var oldHeight = pxToVMin(tools.clientHeight);
-        var heightVmin = clampToolHeight(pxToVMin(tools.clientHeight) + pxToVMin(toolsPos.y*getVH()) - dragY);
+        var heightVmin = clampToolHeight(pxToVMin(tools.clientHeight) + pxToVMin(toolsPos.y*getVH()) - dragY,false);
         tools.style.height = `${heightVmin}vmin`;
         repositionToolsY(toolsPos.y - pxToVH((pxToVMin(tools.clientHeight) - oldHeight)*getVMin()));
     }
     toolsRender();
 }
-
-function getToolsMinMax() {
-    return {
-        min: 5,
-        max: 10000
-    };
+var minDim = 5;
+var uncappedMax = 10000;
+function clampToolWidth(width,capped = true) {
+    var max = capped?pxToVMin(getWindowWidth())-pxToVMin(toolsPos.x*getVW()):uncappedMax;
+    var min = minDim;
+    return clamp(width, min, max);
 }
 
-function clampToolWidth(width) {
-    var dim = getToolsMinMax();
-    return clamp(width, dim.min, dim.max);
-}
-
-function clampToolHeight(height) {
-    var dim = getToolsMinMax();
-    return clamp(height, dim.min + pxToVMin(toolsHead.offsetHeight), dim.max);
+function clampToolHeight(height,capped = true) {
+    var max = capped?pxToVMin(getWindowHeight())-pxToVMin(toolsPos.y*getVH()):uncappedMax; 
+    var min = minDim+pxToVH(toolsHead.offsetHeight);
+    return clamp(height, min, max);
 }
 function getVMin(){
         var min = Math.min(getWindowWidth(), getWindowHeight());
@@ -1489,11 +1506,11 @@ function switchTab(name) {
     for (var i = 0; i < tabs.length; i++) {
         var tab = tabs[i];
         if (tab.getAttribute("name") == name) {
-            tab.setAttribute("class", "visible");
+            tab.classList.add("visible");
             currentTab = tab;
             correctToolScale();
         } else {
-            tab.setAttribute("class", "invisible");
+            tab.classList.remove("visible");
         }
     }
 }

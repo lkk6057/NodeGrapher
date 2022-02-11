@@ -2,14 +2,14 @@
    <head>
       <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
       <script src="https://kit.fontawesome.com/c8b450094c.js" crossorigin="anonymous"></script>
-      <link rel="stylesheet" href="styles.css">
+      <link rel="stylesheet" href="src/styles.css">
       <script src="src/index.js"></script>
    </head>
    <body>
       <div id = "main" class = "main">
-         <div id = "tools" class = "tools">
+         <div id = "tools" class = "tools card">
             <div id = "toolsHead" class = "toolsHead">
-                <span class = "toolsTitle">Tools</span>
+                <span class = "card-header toolsTitle">Tools</span>
                 <div class = "tabShelf">
                     
                     
@@ -21,51 +21,40 @@
                 </div>
              </div>
             <div id = "toolsBody" class = "toolsBody">
-               <tab name = "tools" class = "invisible" width = 45 height = 45>
-
+               <tab name = "tools" width = 45 height = 45>
+                   <div class = "toolGroup card">
+                       <div class = "toolGroupHeader">Create New Node (Drag)</div>
+                       <div class = "toolGroupBody">
+                       <div class = "toolItem">Text</div>
+                   
+                   <div class = "toolItem">Picture</div>
+                   
+                       </div>
+                   </div>
                </tab>
-                <tab name = "options" class = "invisible" width = 45 height = 45>
+                <tab name = "options" width = 45 height = 45>
                     options
                </tab>
-                <tab name = "controls" class = "invisible"  width = 68 height = 51>                      
+                <tab name = "controls"  width = 68 height = 53>                      
     
-                                     <div class = "controlGroup">
+                                     <div class = "controlGroup card">
                    
-                             <p>Selection Controls:</p>
-                    <control>Single Select: Shift + <i class="fas fa-mouse"></i> Click</control>
-                    <control>Box Select: Shift + <i class="fas fa-mouse"></i> Drag</control>
-                    <control>Select All: A</control>
+                             <div class = "controlHeader">Selection Controls:</div>
+                                <div class = "controlGroupBody">
+                                         <control class = "border-bottom">Single Select/Deselect: <bind>SHIFT + <i class="fas fa-mouse"></i> CLICK</bind></control>
+                                         <control class = "border-bottom">Box Select: <bind>SHIFT + B + <i class="fas fa-mouse"></i> DRAG</bind></control>
+                                         <control>Select/Deselect All: <bind>A</bind></control>
+                                         </div>
+                   </div>
+                    
+                                     <div class = "controlGroup card">
                    
-                   
-                   
-                   </div>                 <div class = "controlGroup">
-                   
-                             <p>Selection Controls:</p>
-                    <control>Single Select: Shift + <i class="fas fa-mouse"></i> Click</control>
-                    <control>Box Select: Shift + <i class="fas fa-mouse"></i> Drag</control>
-                    <control>Select All: A</control>
-                   
-                   
-                   
-        </div>                <div class = "controlGroup">
-                   
-                             <p>Selection Controls:</p>
-                    <control>Single Select: Shift + <i class="fas fa-mouse"></i> Click</control>
-                    <control>Box Select: Shift + <i class="fas fa-mouse"></i> Drag</control>
-                    <control>Select All: A</control>
-                   
-                   
-                   
-                        </div>                 <div class = "controlGroup">
-                   
-                             <p>Selection Controls:</p>
-                    <control>Single Select: Shift + <i class="fas fa-mouse"></i> Click</control>
-                    <control>Box Select: Shift + <i class="fas fa-mouse"></i> Drag</control>
-                    <control>Select All: A</control>
-                   
-                   
-                   
-                    </div>
+                             <div class = "controlHeader">Scale Controls:</div>
+                    <control>Scale: Shift + <i class="fas fa-mouse"></i> Scroll</control>
+                    <control>Scale: Shift + <i class="fas fa-mouse"></i> Scroll</control>
+                   </div>   
+                    
+                    
                 </tab>
             </div>
          </div>

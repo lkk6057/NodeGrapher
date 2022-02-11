@@ -1,6 +1,8 @@
 .main {
-	font-family: Tahoma, sans-serif;
+	font-family: Tahoma, sans-serif !important;
 	font-size: 2vmin;
+    line-height: 1em !important;
+    
 }
 
 .chart {
@@ -21,16 +23,17 @@
 }
 
 node {
+    font-size:16px;
 	text-align: center;
-	padding: 0.2em;
-	border-radius: 0.5em;
-	outline: 1px solid black;
+	padding: 1em;
+	border-radius: 0.5em !important;
 	transform: translate(-50%, -50%) !important;
 	background-color: white;
 }
 
 .selected {
-	outline: 3px solid cyan;
+    border:none !important;
+    outline:none !important;
 	background-color: rgba(217, 245, 255, 1) !important;
 	animation: border-pulsate 1s infinite, pulse 1s infinite;
 }
@@ -75,11 +78,10 @@ body {
 }
 
 pre {
-	font-family: Tahoma, sans-serif;
-	white-space: pre-line;
-	padding-right: 1em;
-	padding-left: 1em;
+	font-family: Tahoma, sans-serif !important;
+    padding:0;
 	user-select: none;
+    display:inline;
 }
 
 line {
@@ -87,19 +89,27 @@ line {
 	background-color: black;
 	transform-origin: left;
 	z-index: -1;
+      //box-shadow: 0 1px 2px 0 rgba(0,0,0,0.3);
 }
+
+.card {
+box-shadow: 0 0.5em 1.5em 0 rgb(0 0 0 / 10%);
+    overflow:hidden;
+}
+
 
 .effects {
 	position: absolute;
 }
 
 .tools {
-	outline: 1px solid black;
+	//outline: 1px solid black;
 	position: absolute;
 	background-color: white;
 	z-index: 2;
 	align-content: center;
     overflow:hidden;
+    user-select: none;
 }
 
 .toolsHead {
@@ -107,11 +117,11 @@ line {
 	background-color: #5e60ce;
 	text-align: center;
 	color: white;
-
 }
 
 .toolsTitle {
-	font-size: 3em;
+    font-size:3em;
+    line-height: 1.5em;
 }
 
 .toolsBody {
@@ -144,28 +154,73 @@ tabButton {
 
 tab {
     position:absolute;
-    
+    visibility: hidden;
 }
 control{
-    	outline: 1px solid black;
-    border-radius: 0.5em;
-    padding:0.5em;
     display: block;
+    padding:1em;
+}
+
+bind {
+    color: #c7254e;
+    font-style:bold;
+    background-color: #f9f2f4;
+    border-radius: 1em;
+    padding:0.5em;
 }
 .controlGroup{
+    margin:1em !important;
     text-align: center;
-        	outline: 1px solid black;
-    border-radius: 0.5em;
-    padding:0.5em;
-    display:inline-block;
+    border-radius: 0.5em !important;
     white-space: nowrap;
-    margin:1em;
+        display:inline-block;
+        vertical-align: middle;
 }
+.controlHeader{
+     background-color:mediumseagreen;
+    color:white;
+    padding:1em;
+    margin: 0;
+}
+.controlGroupBody{
+}
+.border-bottom{
+    border-bottom: 1px solid lightgray;
+}
+.border-bottom-black{
+    border-bottom: 1px solid black;
+}
+.toolItem{
+    padding:0.5em;
+    border-radius:1em;
+    background-color:#93caf6;
+    color:white;
+
+}
+.toolGroupBody{
+    display:flex;
+    justify-content: space-around;
+    padding:0.5em;
+}
+.toolGroupHeader{
+    padding:1em;
+    background-color:#4895EF;
+}
+.toolGroup{
+    color:white;
+    margin:1em;
+    //outline: 1px solid black;
+    text-align: center;
+        display:inline-block;
+    vertical-align: middle;
+    
+}
+
 i{
     color:gray;
 }
 .visible {
-	visibility: visible;
+	visibility: visible !important;
 }
 
 .invisible {
