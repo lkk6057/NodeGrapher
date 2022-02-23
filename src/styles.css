@@ -29,13 +29,13 @@ node {
 	border-radius: 0.5em !important;
 	transform: translate(-50%, -50%) !important;
 	background-color: white;
+    white-space: pre;
 }
-
 .selected {
     border:none !important;
     outline:none !important;
 	background-color: rgba(217, 245, 255, 1) !important;
-	animation: border-pulsate 1s infinite, pulse 1s infinite;
+	animation: border-pulsate 1s infinite
 }
 
 @keyframes pulse {
@@ -79,9 +79,6 @@ body {
 
 pre {
 	font-family: Tahoma, sans-serif !important;
-    padding:0;
-	user-select: none;
-    display:inline;
 }
 
 line {
@@ -190,22 +187,23 @@ bind {
 .border-bottom-black{
     border-bottom: 1px solid black;
 }
-.toolItem{
+tool{
     padding:0.5em;
     margin:0.5em;
     width:5em;
     border-radius:1em;
     color:white;
+	background-color: #4ea8de;
 
 }
 .activeToolItem{
   background: 
    linear-gradient(90deg,rgba(255,0,0,1) 0%,rgba(255,154,0,1) 10%, rgba(208,222,33,1) 20%, rgba(79,220,74,1) 30%, rgba(63,218,216,1) 40%, rgba(47,201,226,1) 50%, rgba(28,127,238,1) 60%, rgba(95,21,242,1) 70%, rgba(186,12,248,1) 80%, rgba(251,7,217,1) 90%, rgba(255,0,0,1) 100%) 
    0 0/300% 100%;
-  animation: move 2s linear infinite;
+  animation: rainbowMove 2s linear infinite;
 
 }
-@keyframes move {
+@keyframes rainbowMove {
   to {background-position:-300%,0 }
 }
 

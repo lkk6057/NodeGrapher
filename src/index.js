@@ -9,6 +9,7 @@ var cameraPos = {
     x: 0,
     y: 0
 }
+var domObserver;
 var effectsElement;
 var cameraNodes;
 var chartPos = {
@@ -16,21 +17,6 @@ var chartPos = {
     y: 0
 };
 var scale = 1;
-const KeyCode = {
-    SHIFT: 16,
-    CTRL: 17,
-    ALT: 18,
-    A: 65,
-    Z: 90,
-    B: 66,
-    C: 67,
-    R: 82,
-    S: 83,
-    V: 86,
-    X: 88,
-    Y: 89,
-    Z: 90
-}
 const KeyBinds = {
     CTRL: 17,
     UNDO: 90,
@@ -45,6 +31,8 @@ const KeyBinds = {
     ORDERSORT: 86,
     YAXIS: 90,
     XAXIS: 88,
+    BACKSPACE: 8,
+    DELETE: 46
 
 }
 const MacKeyBinds = {
@@ -77,10 +65,12 @@ var selected = [];
 function initialize() {
     initializeDocument();
     initializeKeybinds();
+    initializeObserver();
     repositionElements();
     load();
     renderGrid();
     render();
+
 }
 
 function initializeDocument() {
@@ -93,6 +83,7 @@ function initializeDocument() {
     toolsHead = document.getElementById("toolsHead");
     toolsBody = document.getElementById("toolsBody");
     initializeTools();
+    initializeToolItems();
     document.addEventListener("mousedown", click);
 
     document.addEventListener("mousemove", mouseMove);
@@ -130,7 +121,18 @@ function initializeKeybinds() {
         }
     }
 }
-
+function initializeObserver(){
+    domObserver = new MutationObserver(function(mutations){
+    mutations.forEach(function(mutation){
+        var nodeParent = getNodeParent(mutation.target);
+        if(nodeParent!=null){
+        changedText(nodeParent);
+    }
+    });    
+});
+var config = {characterData: true, subtree: true,childList:true};
+domObserver.observe(chart, config);
+}
 function unfocusWindow(e) {
     keyStates = [];
 }
@@ -400,6 +402,11 @@ function inputKey(keyCode) {
             case KeyBinds.RESET:
                 resetOrientation();
                 break;
+
+            case KeyBinds.BACKSPACE:
+            case KeyBinds.DELETE:
+                deleteSelection();
+                break;
         }
     }
 }
@@ -415,6 +422,15 @@ function resetOrientation() {
     renderCamera();
 
 }
+
+function deleteSelection() {
+    var selectedCopy = [...selected];
+    for (var i = 0; i < selectedCopy.length; i++) {
+        removeNode(selectedCopy[i]);
+    }
+    renderAllLines();
+}
+
 var saves = [];
 var currentSave = 0;
 
@@ -468,7 +484,7 @@ var queueClear = false;
 function click(e) {
     //console.log(e.path);
     queueClear = false;
-    var target = getNodeParent(e.path[0]);
+    var target = getNodeParent(e.target);
     if (keyStates[KeyBinds.CTRL]) {
         if (target != null) {
             setParents(target.id);
@@ -477,13 +493,13 @@ function click(e) {
         }
     } else {
         if (target != null) {
-            if (!keyStates[KeyBinds.MOVE]) {
+            if (!keyStates[KeyBinds.MOVE] && currentTool) {
                 clearSelection();
             }
             selectElement(target);
 
         } else {
-            if (!keyStates[KeyBinds.MOVE]) {
+            if (!keyStates[KeyBinds.MOVE]&&currentTool==null&&!isDescendant(e.target,tools)) {
                 queueClear = true;
             }
         }
@@ -519,12 +535,24 @@ function isDescendant(ele, ancestor, range = 10) {
 }
 
 function clearSelection() {
+    var err = new Error();
     var selectedIds = [...selected];
     for (var i = 0; i < selectedIds.length; i++) {
         var selectedId = selectedIds[i];
         var element = document.getElementById(selectedId);
         selectElement(element, 1);
     }
+}
+
+function clearTextSelection(){
+    var sel = window.getSelection ? window.getSelection() : document.selection;
+if (sel) {
+    if (sel.removeAllRanges) {
+        sel.removeAllRanges();
+    } else if (sel.empty) {
+        sel.empty();
+    }
+}
 }
 
 function toggleAllSelect() {
@@ -562,6 +590,7 @@ function clearParents() {
 }
 
 function selectElement(element, mode = -1) {
+    clearTextSelection();
     if (element.tagName == "NODE") {
         if (mode == -1) {
             if (!selected.includes(element.id)) {
@@ -623,8 +652,7 @@ function recreateElements() {
     var nodes = getAllNodes();
     for (var i = 0; i < nodes.length; i++) {
         var node = nodes[i];
-        var element = generateNodeElement(node);
-        cameraNodes.appendChild(element);
+        createNodeElement(node);
     }
 }
 
@@ -652,10 +680,15 @@ function renderAllLines() {
 }
 
 function renderLines(node) {
+    var liveChildren = [];
     for (var i = 0; i < node.children.length; i++) {
         var child = getChildNode(node, i);
-        renderLine(node, child);
+        if (child != null) {
+            renderLine(node, child);
+            liveChildren.push(node.children[i]);
+        }
     }
+    node.children = liveChildren;
 }
 
 function renderLine(node, targetNode) {
@@ -665,33 +698,32 @@ function renderLine(node, targetNode) {
         x: targetNode.position.x - node.position.x,
         y: targetNode.position.y - node.position.y
     };
-    var line = updateLineElement(lineName,offset, node.position);
+    var line = updateLineElement(lineName, offset, node.position);
     effectsElement.appendChild(line);
 }
 
-function updateLineElement(name,offset, pos, color = "black", thickness = 1) {
-    var attributes = generateLineAttributes(offset,pos,color,thickness);
+function updateLineElement(name, offset, pos, color = "black", thickness = 1) {
+    var attributes = generateLineAttributes(offset, pos, color, thickness);
     var matches = document.getElementsByName(name);
     var line;
-    if(matches.length==1){
+    if (matches.length == 1) {
         line = matches[0];
-            }
-    else if(matches.length>1){
+    } else if (matches.length > 1) {
         removeElementsByName(name);
     }
-    
-        if(matches.length==0){
+
+    if (matches.length == 0) {
         line = document.createElement("LINE");
-            console.log("gen");
-       }
-    line.setAttribute("name",name);
-    line.style.width =  attributes.width ;
+    }
+    line.setAttribute("name", name);
+    line.style.width = attributes.width;
     line.style.height = attributes.height;
     line.style.top = attributes.top;
     line.style.left = attributes.left;
     line.style.transform = attributes.transform;
     return line;
 }
+
 function generateLineAttributes(offset, pos, color, thickness) {
     var attributes = {};
     var length = magnitude(offset);
@@ -703,6 +735,7 @@ function generateLineAttributes(offset, pos, color, thickness) {
     attributes.transform = `rotate(${angle}rad)`;
     return attributes;
 }
+
 function repositionElements() {
     renderCamera();
 }
@@ -778,6 +811,9 @@ function shiftNode(node, pos) {
     if (parentNode != null) {
         renderLine(parentNode, node)
     }
+    else{
+        node.parent = "";
+    }
 }
 
 function generateUUID() {
@@ -830,11 +866,8 @@ function generateNodeElement(node) {
     switch (node.type) {
         case "text":
             nodeEle = document.createElement("node");
-            nodeEle.innerHTML = formatNodeText(node.data.text);
+            nodeEle.innerHTML = node.data.text;
             nodeEle.setAttribute("spellcheck", "false");
-            nodeEle.addEventListener("DOMCharacterDataModified", function (event) {
-                editedText(event);
-            }, false);
             break;
     }
     nodeEle.className = "absolute card";
@@ -853,6 +886,12 @@ function generateNodeElement(node) {
     highlightElement(nodeEle);
     renderLines(node);
     return nodeEle;
+}
+
+function createNodeElement(node) {
+    var element = generateNodeElement(node);
+    cameraNodes.appendChild(element);
+    return element;
 }
 
 function worldToScreenPos(pos) {
@@ -937,23 +976,10 @@ function nodeToScreenPos() {
 }
 var updated = false;
 
-function editedText(event) {
-    var ele = event.srcElement.parentElement;
-    if (ele.id.length == 0) {
-        ele = event.srcElement.parentElement.offsetParent;
-    }
-    var node = getNodeById(ele.id);
-    if (node != null) {
-
-        var unescaped = ele.innerText;
-        console.log(unescaped);
-        node.data.text = unescaped;
-        updated = true;
-    }
-}
-
-function formatNodeText(text) {
-    return "<pre>" + text + "</pre>";
+function changedText(element){
+    var node = getNodeById(element.id);
+    node.data.text = unescape(element.innerText);
+    console.log(node.data.text);
 }
 
 function setCursor(ele, pos) {
@@ -989,6 +1015,20 @@ function getNodes(ids) {
         nodes.push(node);
     }
     return nodes;
+}
+
+function deleteNode(id) {
+    delete data.library[id];
+}
+
+function removeNode(id) {
+    deleteNode(id);
+    var element = document.getElementById(id);
+    element.remove();
+    var selectedIndex = selected.indexOf(id);
+    if(selectedIndex>-1){
+       selected.splice(selectedIndex,1);
+       }
 }
 
 function getParentNode(node) {
@@ -1109,6 +1149,7 @@ function closeDragElement() {
     centerCamera();
     render();
     saveState();
+    toolItemUp();
 }
 
 function centerCamera() {
@@ -1195,14 +1236,14 @@ function dragElement(elmnt) {
             updated = false;
         }
         if (!keyStates[KeyBinds.MOVE]) {
-            if (getNodeParent(e.path[0])==null && !isDescendant(e.path[0], tools)||keyStates[KeyBinds.CTRL]) {
+            if (getNodeParent(e.path[0]) == null && !isDescendant(e.path[0], tools) || keyStates[KeyBinds.CTRL]) {
                 cameraDragMouseDown(e);
                 e.preventDefault();
                 unfocus();
             }
         } else if (selecting || keyStates[KeyBinds.BOXSELECT] || selected.length == 0) {
             selectDragMouseDown(e);
-        } else if (selected.length > 0) {
+        } else if (selected.length > 0&&currentTool==null) {
             dragMouseDown(e);
         }
     }
@@ -1327,8 +1368,8 @@ function getToolsDragSides(e) {
     var dragRange = 4;
     var dragRangeX = pxToVW(dragRange);
     var dragRangeY = pxToVH(dragRange);
-    var offX = pxToVW(e.clientX)-toolsPos.x;
-    var offY = pxToVH(e.clientY)-toolsPos.y;
+    var offX = pxToVW(e.clientX) - toolsPos.x;
+    var offY = pxToVH(e.clientY) - toolsPos.y;
     var right = false;
     var bottom = false;
     var left = false;
@@ -1361,7 +1402,7 @@ function toolsMouseDown(e) {
     e.preventDefault();
     var startPos = mousePos;
     document.onmouseup = closeDragElement;
-    if (isDescendant(e.path[0],document.getElementById("toolsHead"),2) && toolCursorStyle.length == 0) {
+    if (isDescendant(e.path[0], document.getElementById("toolsHead"), 2) && toolCursorStyle.length == 0) {
         document.onmousemove = function (e) {
             toolsDrag(e, startPos)
         }
@@ -1418,59 +1459,67 @@ function toolsResizeDrag(e, dragConfig) {
     }
     if (dragConfig.left) {
         var oldWidth = pxToVMin(tools.clientWidth);
-        var widthVmin = clampToolWidth(pxToVMin(tools.clientWidth) + pxToVMin(toolsPos.x*getVW()) - dragX,false);
+        var widthVmin = clampToolWidth(pxToVMin(tools.clientWidth) + pxToVMin(toolsPos.x * getVW()) - dragX, false);
         tools.style.width = `${widthVmin}vmin`;
-        repositionToolsX(toolsPos.x - pxToVW((pxToVMin(tools.clientWidth) - oldWidth)*getVMin()));
+        repositionToolsX(toolsPos.x - pxToVW((pxToVMin(tools.clientWidth) - oldWidth) * getVMin()));
     }
     if (dragConfig.top) {
         var oldHeight = pxToVMin(tools.clientHeight);
-        var heightVmin = clampToolHeight(pxToVMin(tools.clientHeight) + pxToVMin(toolsPos.y*getVH()) - dragY,false);
+        var heightVmin = clampToolHeight(pxToVMin(tools.clientHeight) + pxToVMin(toolsPos.y * getVH()) - dragY, false);
         tools.style.height = `${heightVmin}vmin`;
-        repositionToolsY(toolsPos.y - pxToVH((pxToVMin(tools.clientHeight) - oldHeight)*getVMin()));
+        repositionToolsY(toolsPos.y - pxToVH((pxToVMin(tools.clientHeight) - oldHeight) * getVMin()));
     }
     toolsRender();
 }
 var minDim = 5;
 var uncappedMax = 10000;
-function clampToolWidth(width,capped = true) {
-    var max = capped?pxToVMin(getWindowWidth())-pxToVMin(toolsPos.x*getVW()):uncappedMax;
+
+function clampToolWidth(width, capped = true) {
+    var max = capped ? pxToVMin(getWindowWidth()) - pxToVMin(toolsPos.x * getVW()) : uncappedMax;
     var min = minDim;
     return clamp(width, min, max);
 }
 
-function clampToolHeight(height,capped = true) {
-    var max = capped?pxToVMin(getWindowHeight())-pxToVMin(toolsPos.y*getVH()):uncappedMax; 
-    var min = minDim+pxToVH(toolsHead.offsetHeight);
+function clampToolHeight(height, capped = true) {
+    var max = capped ? pxToVMin(getWindowHeight()) - pxToVMin(toolsPos.y * getVH()) : uncappedMax;
+    var min = minDim + pxToVH(toolsHead.offsetHeight);
     return clamp(height, min, max);
 }
-function getVMin(){
-        var min = Math.min(getWindowWidth(), getWindowHeight());
+
+function getVMin() {
+    var min = Math.min(getWindowWidth(), getWindowHeight());
     var vMin = min / 100;
     return vMin;
 }
-function getVMax(){
-        var max = Math.max(getWindowWidth(), getWindowHeight());
+
+function getVMax() {
+    var max = Math.max(getWindowWidth(), getWindowHeight());
     var vMin = max / 100;
     return vMax;
 }
-function getVW(){
-        var width = getWindowWidth();
-    var vW = width/100;
+
+function getVW() {
+    var width = getWindowWidth();
+    var vW = width / 100;
     return vW;
 }
-function getVH(){
-        var height = getWindowHeight();
-    var vH = height/100;
+
+function getVH() {
+    var height = getWindowHeight();
+    var vH = height / 100;
     return vH;
 }
+
 function pxToVMin(px) {
     return px / getVMin();
 }
-function pxToVW(px){
-    return px/getVW();
+
+function pxToVW(px) {
+    return px / getVW();
 }
-function pxToVH(px){
-    return px/getVH();
+
+function pxToVH(px) {
+    return px / getVH();
 }
 
 function toolsRender() {
@@ -1513,4 +1562,54 @@ function switchTab(name) {
             tab.classList.remove("visible");
         }
     }
+}
+
+var currentTool;
+
+function initializeToolItems() {
+    var toolItems = document.getElementsByTagName("TOOL");
+    for (var i = 0; i < toolItems.length; i++) {
+        var toolItem = toolItems[i];
+        toolItem.onmousedown = toolItemMouseDown;
+    }
+}
+
+function toolItemMouseDown(e) {
+    if(!keyStates[KeyBinds.MOVE]){
+    clearSelection();
+    
+}
+    var toolElement = e.target
+    toolElement.classList.add("activeToolItem");
+    var target = toolElement.getAttribute("target");
+    var mouseWorld = screenToWorldPos(mousePos);
+    switch (target) {
+        case "text":
+            currentTool = generateTextNode("", mouseWorld);
+            var newNodeElement = createNodeElement(currentTool);
+            selectElement(newNodeElement);
+            break;
+    }
+    document.onmousemove = toolItemDrag;
+}
+
+function toolItemDrag(e) {
+    if (currentTool != null) {
+        var worldPos = screenToWorldPos({
+            x: e.clientX,
+            y: e.clientY
+        });
+        shiftNode(currentTool, worldPos);
+    } else {
+        toolItemUp();
+    }
+}
+
+function toolItemUp() {
+    var toolItems = document.getElementsByTagName("TOOL");
+    for (var i = 0; i < toolItems.length; i++) {
+        var toolItem = toolItems[i];
+        toolItem.classList.remove("activeToolItem");
+    }
+    currentTool = null;
 }
