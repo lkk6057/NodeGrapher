@@ -166,12 +166,13 @@ bind {
     padding:0.5em;
 }
 .controlGroup{
-    margin:1em;
+    font-size:0.8em;
+    margin:0.5em;
     text-align: center;
     border-radius: 0.5em;
     white-space: nowrap;
         display:inline-block;
-        vertical-align: middle;
+        vertical-align: top;
 }
 .controlHeader{
      background-color:mediumseagreen;

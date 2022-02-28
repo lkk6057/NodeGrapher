@@ -16,14 +16,13 @@
                     <tabButton target = "tools">Tools</tabButton>
                     <tabButton target = "options">Options</tabButton>
                     <tabButton target = "controls">Controls</tabButton>
-                    <tabButton>Extra2</tabButton>
                 
                 </div>
              </div>
             <div id = "toolsBody" class = "toolsBody">
                <tab name = "tools" width = 45 height = 45>
                    <div class = "toolGroup card">
-                       <div class = "toolGroupHeader">Create New Node (Drag)</div>
+                       <div class = "toolGroupHeader">Create New Node (DRAG)</div>
                        <div class = "toolGroupBody">
                            <tool target = "text">Text</tool>
                                                   
@@ -31,11 +30,29 @@
                    </div>
                </tab>
                 <tab name = "options" width = 45 height = 45>
-                    options
                </tab>
-                <tab name = "controls"  width = 68 height = 53>                      
+                <tab name = "controls"  width = 80 height = 70>                      
     
+
+                    
                                      <div class = "controlGroup card">
+                   
+                             <div class = "controlHeader">Scale Controls:</div>
+                                         <control>Scale Selected: <bind>SHIFT + <i class="fas fa-mouse"></i> SCROLL</bind></control>
+                    <control>Circle Scale: <bind>SHIFT + C + <i class="fas fa-mouse"></i> SCROLL Up</bind></control>
+                    <control>Reset Circle: <bind>SHIFT + C + <i class="fas fa-mouse"></i> SCROLL Down</bind></control>
+                    <control>Rotate Circle: <bind>SHIFT + Alt + C <i class="fas fa-mouse"></i> SCROLL</bind></control>
+                    <control>Change Circle Angle: <bind>SHIFT + S + <i class="fas fa-mouse"></i> SCROLL</bind></control>
+                   </div>   
+                                                                                                <div class = "controlGroup card">
+                   
+                             <div class = "controlHeader">Movement Controls:</div>
+                                         <control>Move Selected: <bind>SHIFT + <i class="fas fa-mouse"></i> CLICK & DRAG</bind></control>
+                                        <control>Rotate Around Mouse: <bind>SHIFT + R + <i class="fas fa-mouse"></i> SCROLL</bind></control>
+                                        <control>Order Square: <bind>V</bind></control>
+                                        <control>Order Linear: <bind>ALT + V</bind></control>
+                   </div> 
+                                                       <div class = "controlGroup card">
                    
                              <div class = "controlHeader">Selection Controls:</div>
                                 <div class = "controlGroupBody">
@@ -44,19 +61,19 @@
                                          <control>Select/Deselect All: <bind>A</bind></control>
                                          </div>
                    </div>
-                    
-                                     <div class = "controlGroup card">
+    
+                                                                                            <div class = "controlGroup card">
                    
-                             <div class = "controlHeader">Scale Controls:</div>
-                                         <control>Scale: <bind>Shift + <i class="fas fa-mouse"></i> Scroll</bind></control>
-                    <control>Circle Scale: <bind>Shift + C + <i class="fas fa-mouse"></i> Scroll Up</bind></control>
-                    <control>Reset Circle: <bind>Shift + C + <i class="fas fa-mouse"></i> Scroll Down</bind></control>
-                    <control>Rotate Circle: <bind>Shift + Alt + C <i class="fas fa-mouse"></i> Scroll</bind></control>
-                    <control>Change Circle Angle: <bind>Shift + S + <i class="fas fa-mouse"></i> Scroll</bind></control>
-                    <control>Scale: <bind>Shift + <i class="fas fa-mouse"></i> Scroll</bind></control>
-                   </div>   
-                    
-                    
+                             <div class = "controlHeader">Node Controls:</div>
+                                         <control>Delete Selected: <bind>DELETE/BACKSPACE</bind></control>
+                                          <control>Undo: <bind>CTRL + Z</bind></control>
+                                          <control>Redo: <bind>CTRL + SHIFT + Z</bind></control>   
+                   </div>
+                                                                                <div class = "controlGroup card">
+                   
+                             <div class = "controlHeader">Node Tree Controls:</div>
+                                         <control>Set Parent of Selected: <bind>CTRL/CMD + <i class="fas fa-mouse"></i> CLICK</bind></control>
+                   </div>
                 </tab>
             </div>
          </div>
