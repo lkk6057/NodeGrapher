@@ -645,7 +645,12 @@ function toggleAllSelect() {
         var allElements = getAllElements();
         for (var i = 0; i < allElements.length; i++) {
             var element = allElements[i];
-            selectElement(element, 0);
+            if(keyStates[KeyBinds.MOVE]){
+            selectElement(element, -1);
+        }
+            else{
+                selectElement(element, 0);
+            }
         }
     }
 }
@@ -1923,7 +1928,15 @@ var jsonClones = clipBoard;
         var processedNodes = JSON.parse(jsonClones);
         for(var i = 0;i<processedNodes.length;i++){
             var processedNode = processedNodes[i];
-            processedNode.children = [];
+            
+            var activeChildren = [];
+            for(var c = 0;c<processedNode.children.length;c++){
+                var child= processedNode.children[c];
+                if(newIds.includes(child)){
+                   activeChildren.push(child);
+                   }
+            }
+            processedNode.children = activeChildren;
             var parentNode = getNodeById(processedNode.parent);
             if(parentNode!=null){
             appendChild(parentNode,processedNode);
