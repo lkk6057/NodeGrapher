@@ -382,7 +382,7 @@ function orderSelected() {
 function keyDown(e) {
 
     keyStates[e.keyCode] = true;
-    inputKey(e,e.keyCode);
+    inputKey(e);
 
 }
 
@@ -1923,6 +1923,7 @@ var jsonClones = clipBoard;
         var processedNodes = JSON.parse(jsonClones);
         for(var i = 0;i<processedNodes.length;i++){
             var processedNode = processedNodes[i];
+            processedNode.children = [];
             var parentNode = getNodeById(processedNode.parent);
             if(parentNode!=null){
             appendChild(parentNode,processedNode);
