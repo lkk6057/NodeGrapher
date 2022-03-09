@@ -382,7 +382,7 @@ function orderSelected() {
 function keyDown(e) {
 
     keyStates[e.keyCode] = true;
-    inputKey(e.keyCode);
+    inputKey(e,e.keyCode);
 
 }
 
@@ -406,12 +406,13 @@ function unfocus() {
     }
 }
 
-function inputKey(keyCode) {
+function inputKey(event) {
     if (!nodeFocused() && !toolFocused()) {
 
-        switch (keyCode) {
+        switch (event.keyCode) {
             case KeyBinds.UNDO:
                 if (!updated) {
+                    event.preventDefault();
                     if (keyStates[KeyBinds.MOVE]) {
                         redo();
                     } else {
