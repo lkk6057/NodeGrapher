@@ -5,6 +5,8 @@ var camera;
 var tools;
 var toolsHead;
 var toolsBody;
+var hudStats;
+var properties = {};
 var cameraPos = {
     x: 0,
     y: 0
@@ -29,10 +31,15 @@ const KeyBinds = {
     SELECTALL: 65,
     RESET: 70,
     ORDERSORT: 86,
-    YAXIS: 90,
     XAXIS: 88,
     BACKSPACE: 8,
-    DELETE: 46
+    DELETE: 46,
+    LEFT: 37,
+    UP: 38,
+    RIGHT: 39,
+    DOWN: 40,
+    COPY: 67,
+    PASTE: 86
 
 }
 const MacKeyBinds = {
@@ -66,9 +73,10 @@ function initialize() {
     initializeDocument();
     initializeKeybinds();
     initializeObserver();
+    initializeSettings();
+    initializeProperties();
     repositionElements();
     load();
-    renderGrid();
     render();
 
 }
@@ -82,6 +90,12 @@ function initializeDocument() {
     tools = document.getElementById("tools");
     toolsHead = document.getElementById("toolsHead");
     toolsBody = document.getElementById("toolsBody");
+    hudStats = document.getElementById("hudStats");
+    properties.style = document.getElementById("propertyStyle");
+    properties.fontSize = document.getElementById("propertyFontSize");
+    properties.fontColor = document.getElementById("propertyFontColor");
+    properties.backgroundColor = document.getElementById("propertyBackgroundColor");
+    properties.text = document.getElementById("propertyText");
     initializeTools();
     initializeToolItems();
     document.addEventListener("mousedown", click);
@@ -121,18 +135,24 @@ function initializeKeybinds() {
         }
     }
 }
-function initializeObserver(){
-    domObserver = new MutationObserver(function(mutations){
-    mutations.forEach(function(mutation){
-        var nodeParent = getNodeParent(mutation.target);
-        if(nodeParent!=null){
-        changedText(nodeParent);
-    }
-    });    
-});
-var config = {characterData: true, subtree: true,childList:true};
-domObserver.observe(chart, config);
+
+function initializeObserver() {
+    domObserver = new MutationObserver(function (mutations) {
+        mutations.forEach(function (mutation) {
+            var nodeParent = getNodeParent(mutation.target);
+            if (nodeParent != null) {
+                changedText(nodeParent);
+            }
+        });
+    });
+    var config = {
+        characterData: true,
+        subtree: true,
+        childList: true
+    };
+    domObserver.observe(chart, config);
 }
+
 function unfocusWindow(e) {
     keyStates = [];
 }
@@ -151,7 +171,7 @@ function resizeWindow(e) {
 }
 
 function zoom(event) {
-    if (!nodeFocused()) {
+    if (!nodeFocused() && !toolFocused()&&!isDescendant(event.target,tools)) {
         var delta = event.deltaY;
         var deltaMag = Math.abs(delta);
         var zoomFactor = 1 - (delta * 0.001);
@@ -192,7 +212,6 @@ function zoom(event) {
             y: 0
         };
         shiftElements();
-        renderGrid();
         render();
     }
 }
@@ -247,9 +266,11 @@ function scaleSelected(zoomFactor) {
                 break;
         }
         if (keyStates[KeyBinds.XAXIS]) {
-            newPosition.y = node.position.y;
-        } else if (keyStates[KeyBinds.YAXIS]) {
-            newPosition.x = node.position.x;
+            if (!keyStates[KeyBinds.ALTERNATE]) {
+                newPosition.y = node.position.y;
+            } else {
+                newPosition.x = node.position.x;
+            }
         }
         shiftNode(node, newPosition);
     }
@@ -375,6 +396,10 @@ function nodeFocused() {
     return document.activeElement.tagName == "NODE";
 }
 
+function toolFocused() {
+    return isDescendant(document.activeElement, tools);
+}
+
 function unfocus() {
     if (document.activeElement.tagName != "BODY") {
         document.activeElement.blur();
@@ -382,10 +407,11 @@ function unfocus() {
 }
 
 function inputKey(keyCode) {
-    if (!nodeFocused()) {
+    if (!nodeFocused() && !toolFocused()) {
+
         switch (keyCode) {
             case KeyBinds.UNDO:
-                if (keyStates[KeyBinds.CTRL] && !updated) {
+                if (!updated) {
                     if (keyStates[KeyBinds.MOVE]) {
                         redo();
                     } else {
@@ -396,8 +422,18 @@ function inputKey(keyCode) {
             case KeyBinds.SELECTALL:
                 toggleAllSelect();
                 break;
+            case KeyBinds.COPY:
+                if(!keyStates[KeyBinds.MOVE]&&keyStates[KeyBinds.CTRL]){
+                   copySelected();
+                   }
+            break;
             case KeyBinds.ORDERSORT:
+                if(!keyStates[KeyBinds.CTRL]){
                 orderSelected();
+        }
+        else{
+            pasteSelected();
+        }
                 break;
             case KeyBinds.RESET:
                 resetOrientation();
@@ -407,8 +443,47 @@ function inputKey(keyCode) {
             case KeyBinds.DELETE:
                 deleteSelection();
                 break;
+            case KeyBinds.LEFT:
+                cycleNode(-1);
+                break;
+            case KeyBinds.RIGHT:
+                cycleNode(1);
+                break;
         }
     }
+}
+var cycleIndex = 0;
+
+function cycleNode(delta) {
+    var nodeIds = Object.keys(data.library);
+    cycleIndex += delta;
+    var max = nodeIds.length;
+    cycleIndex = wrapIndex(cycleIndex, max);
+    focusNode(nodeIds[cycleIndex]);
+}
+
+function focusNode(id) {
+    var node = getNodeById(id);
+    if (node != null) {
+        var nodeEle = document.getElementById(id);
+        clearSelection();
+        data.camera.position.x = node.position.x;
+        data.camera.position.y = node.position.y;
+        selectElement(nodeEle, 0);
+        setSelectTarget(id);
+        shiftElements();
+        renderCamera();
+        render();
+    }
+}
+
+function wrapIndex(num, max) {
+    if (num < 0) {
+        num = max - 1;
+    } else if (num >= max) {
+        num = 0;
+    }
+    return num;
 }
 
 function resetOrientation() {
@@ -420,7 +495,7 @@ function resetOrientation() {
     };
     shiftElements();
     renderCamera();
-
+    render();
 }
 
 function deleteSelection() {
@@ -482,7 +557,6 @@ function saveAll() {
 var queueClear = false;
 
 function click(e) {
-    //console.log(e.path);
     queueClear = false;
     var target = getNodeParent(e.target);
     if (keyStates[KeyBinds.CTRL]) {
@@ -493,13 +567,14 @@ function click(e) {
         }
     } else {
         if (target != null) {
-            if (!keyStates[KeyBinds.MOVE] && currentTool) {
+            if (!keyStates[KeyBinds.MOVE]) {
                 clearSelection();
+            } else {
+                e.preventDefault();
             }
-            selectElement(target);
-
+                            selectElement(target);
         } else {
-            if (!keyStates[KeyBinds.MOVE]&&currentTool==null&&!isDescendant(e.target,tools)) {
+            if (!keyStates[KeyBinds.MOVE] && currentTool == null && !isDescendant(e.target, tools)) {
                 queueClear = true;
             }
         }
@@ -537,26 +612,33 @@ function isDescendant(ele, ancestor, range = 10) {
 function clearSelection() {
     var err = new Error();
     var selectedIds = [...selected];
-    for (var i = 0; i < selectedIds.length; i++) {
+    for (var i = selectedIds.length - 1; i >= 0; i--) {
         var selectedId = selectedIds[i];
         var element = document.getElementById(selectedId);
+        if(element!=null){
         selectElement(element, 1);
     }
+        else{
+            var nullIndex = selected.indexOf(selectedId);
+            selected.splice(nullIndex,1);
+        }
+    }
+
 }
 
-function clearTextSelection(){
+function clearTextSelection() {
     var sel = window.getSelection ? window.getSelection() : document.selection;
-if (sel) {
-    if (sel.removeAllRanges) {
-        sel.removeAllRanges();
-    } else if (sel.empty) {
-        sel.empty();
+    if (sel) {
+        if (sel.removeAllRanges) {
+            sel.removeAllRanges();
+        } else if (sel.empty) {
+            sel.empty();
+        }
     }
-}
 }
 
 function toggleAllSelect() {
-    if (selected.length > 0) {
+    if (selected.length > 0 && !keyStates[KeyBinds.MOVE]) {
         clearSelection();
     } else {
         var allElements = getAllElements();
@@ -595,6 +677,9 @@ function selectElement(element, mode = -1) {
         if (mode == -1) {
             if (!selected.includes(element.id)) {
                 mode = 0;
+                if (selected.length == 0) {
+                    setSelectTarget(element.id);
+                }
             } else {
                 mode = 1
             }
@@ -610,16 +695,21 @@ function selectElement(element, mode = -1) {
                 break;
         }
         highlightElement(element);
+        if(selectTargetCache.length==0){
+           setSelectTarget(element.id);
+           }
     }
+
+    updateHUD();
 }
 
 function highlightElement(element) {
     if (selected.includes(element.getAttribute("id"))) {
         element.setAttribute("contenteditable", "true");
-        element.setAttribute("unselectable", "on");
+        element.setAttribute("unselectable", "off");
         element.classList.add("selected");
     } else {
-        element.setAttribute("contenteditable", "false");
+        element.setAttribute("contenteditable", "true");
         element.setAttribute("unselectable", "on");
         element.classList.remove("selected");
     }
@@ -645,6 +735,8 @@ function render() {
         repositionElements();
     }
     nodeCount = newNodeCount;
+    renderGrid();
+    updateHUD();
 }
 
 function recreateElements() {
@@ -743,17 +835,6 @@ function repositionElements() {
 function load() {
 
     var origin = generateTextNode("origin");
-    var area = 200;
-    for (var i = 0; i < 5; i++) {
-        var x = getRandomInt(-area, area);
-        var y = getRandomInt(-area, area);
-        var position = {
-            x: x,
-            y: y
-        };
-
-        var childEle = generateTextNode(`${x} ${y} ${i}`, position);
-    }
 
     var lib = JSON.parse(localStorage.getItem("library"));
     if (lib != null) {
@@ -810,8 +891,7 @@ function shiftNode(node, pos) {
     var parentNode = getParentNode(node);
     if (parentNode != null) {
         renderLine(parentNode, node)
-    }
-    else{
+    } else {
         node.parent = "";
     }
 }
@@ -831,24 +911,25 @@ function getRandomInt(min, max) {
 function generateTextNode(text, position = {
     x: 0,
     y: 0
-}, styles = [{
-    name: "backgroundColor",
-    value: "white"
-        }]) {
+}, style = {
+    fontSize: "16",
+    color: "#000000",
+    backgroundColor: "#ffffff"
+}) {
     var data = {
         text: text
     }
-    return generateNode("text", data, position, styles);
+    return generateNode("text", data, position, style);
 }
 
-function generateNode(type, data, position, styles = []) {
+function generateNode(type, data, position, style = {}) {
     var node = {
         type: "text",
         id: generateUUID(),
         data: data,
         position: position,
         children: [],
-        styles: styles,
+        style: style,
         parent: "",
         enabled: true
     }
@@ -860,12 +941,34 @@ function updateLibrary(node) {
     return data.library[node.id];
 }
 
+function appendNodes(nodes){
+    for(var i = 0;i<nodes.length;i++){
+        var node = nodes[i];
+        updateLibrary(node);
+    }
+}
 function generateNodeElement(node) {
     var nodeEle;
     var nodeStyle = "";
     switch (node.type) {
         case "text":
             nodeEle = document.createElement("node");
+            nodeEle.addEventListener("focusout", function (e) {
+                finishedEditingText(e.target)
+            });
+            break;
+    }
+    dragElement(nodeEle);
+    updateNodeElement(node, nodeEle);
+    return nodeEle;
+}
+
+function updateNodeElement(node, nodeEle = null) {
+    if (nodeEle == null) {
+        nodeEle = document.getElementById(node.id);
+    }
+    switch (node.type) {
+        case "text":
             nodeEle.innerHTML = node.data.text;
             nodeEle.setAttribute("spellcheck", "false");
             break;
@@ -875,17 +978,14 @@ function generateNodeElement(node) {
     nodeEle.style.left = nodeScreenPos.x + "px";
     nodeEle.style.top = nodeScreenPos.y + "px";
 
-    dragElement(nodeEle);
     nodeEle.setAttribute("id", node.id);
     if (node.style != null) {
-        for (var i = 0; i < node.style.length; i++) {
-            var style = node.style[i];
-            nodeEle.style[style.name] = style.value;
+        for (const [key, value] of Object.entries(node.style)) {
+            nodeEle.style[key] = value;
         }
     }
     highlightElement(nodeEle);
     renderLines(node);
-    return nodeEle;
 }
 
 function createNodeElement(node) {
@@ -976,10 +1076,14 @@ function nodeToScreenPos() {
 }
 var updated = false;
 
-function changedText(element){
+function changedText(element) {
     var node = getNodeById(element.id);
     node.data.text = unescape(element.innerText);
-    console.log(node.data.text);
+}
+
+function finishedEditingText(element) {
+    var node = getNodeById(element.id);
+    updateNodeElement(node, element);
 }
 
 function setCursor(ele, pos) {
@@ -1026,9 +1130,9 @@ function removeNode(id) {
     var element = document.getElementById(id);
     element.remove();
     var selectedIndex = selected.indexOf(id);
-    if(selectedIndex>-1){
-       selected.splice(selectedIndex,1);
-       }
+    if (selectedIndex > -1) {
+        selected.splice(selectedIndex, 1);
+    }
 }
 
 function getParentNode(node) {
@@ -1119,7 +1223,7 @@ function selectElementBox(origin, end) {
         var pos = node.position;
         if (pos.x >= worldOrigin.x && pos.x < worldEnd.x && pos.y >= worldOrigin.y && pos.y < worldEnd.y) {
             var element = document.getElementById(node.id);
-            if (element != null) {
+            if (element != null && !selected.includes(element.id)) {
                 selectElement(element, 0);
                 highlightElement(element);
             }
@@ -1142,6 +1246,7 @@ function closeDragElement() {
     selecting = false;
     if (queueClear) {
         clearSelection();
+        setSelectTarget("");
     }
     queueClear = false;
     drawSelection();
@@ -1243,7 +1348,7 @@ function dragElement(elmnt) {
             }
         } else if (selecting || keyStates[KeyBinds.BOXSELECT] || selected.length == 0) {
             selectDragMouseDown(e);
-        } else if (selected.length > 0&&currentTool==null) {
+        } else if (selected.length > 0 && currentTool == null) {
             dragMouseDown(e);
         }
     }
@@ -1297,7 +1402,6 @@ function dragElement(elmnt) {
         cameraPos.x += deltaX;
         cameraPos.y += deltaY;
         unfocus();
-        renderGrid();
         render();
     }
 }
@@ -1392,14 +1496,40 @@ function getToolsDragSides(e) {
         left: left,
         top: top
     };
+    var cornerDist = 2;
+    var tlDist = distance(0, 0, offX, offY);
+    var trDist = distance(pxToVW(tools.offsetWidth), 0, offX, offY);
+    var blDist = distance(0, pxToVH(tools.offsetHeight), offX, offY);
+    var brDist = distance(pxToVW(tools.offsetWidth), pxToVH(tools.offsetHeight), offX, offY);
+    if (tlDist < cornerDist) {
+        dragConfig.top = true;
+        dragConfig.left = true;
+    }
+    if (trDist < cornerDist) {
+        dragConfig.top = true;
+        dragConfig.right = true;
+    }
+    if (blDist < cornerDist) {
+        dragConfig.bottom = true;
+        dragConfig.left = true;
+    }
+    if (brDist < cornerDist) {
+        dragConfig.bottom = true;
+        dragConfig.right = true;
+    }
+
     return dragConfig;
+}
+
+function distance(x1, y1, x2, y2) {
+    return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
 }
 
 function toolsMouseDown(e) {
     toolCursorLock = true;
     var offX = e.clientX - toolsPos.x;
     var offY = e.clientY - toolsPos.y;
-    e.preventDefault();
+    //e.preventDefault();
     var startPos = mousePos;
     document.onmouseup = closeDragElement;
     if (isDescendant(e.path[0], document.getElementById("toolsHead"), 2) && toolCursorStyle.length == 0) {
@@ -1575,10 +1705,10 @@ function initializeToolItems() {
 }
 
 function toolItemMouseDown(e) {
-    if(!keyStates[KeyBinds.MOVE]){
-    clearSelection();
-    
-}
+    if (!keyStates[KeyBinds.MOVE]) {
+        clearSelection();
+
+    }
     var toolElement = e.target
     toolElement.classList.add("activeToolItem");
     var target = toolElement.getAttribute("target");
@@ -1612,4 +1742,198 @@ function toolItemUp() {
         toolItem.classList.remove("activeToolItem");
     }
     currentTool = null;
+}
+
+function initializeSettings() {
+    var settingElements = document.getElementsByName("option");
+    for (var i = 0; i < settingElements.length; i++) {
+        var settingElement = settingElements[i];
+        switch (settingElement.type) {
+            case "checkbox":
+                var target = settingElement.getAttribute("target");
+                settingElement.checked = settings[target];
+                settingElement.addEventListener('change', (event) => {
+                    settings[event.currentTarget.getAttribute("target")] = event.currentTarget.checked;
+                    render();
+                })
+                break;
+
+            case "text":
+            case "number":
+                var target = settingElement.getAttribute("target");
+                settingElement.value = settings[target];
+                settingElement.addEventListener('change', (event) => {
+                    settings[event.currentTarget.getAttribute("target")] = event.currentTarget.value;
+                    render();
+                })
+                break;
+                break;
+        }
+    }
+}
+
+function initializeProperties() {
+    var applyButton = document.getElementById("stylePropertyApply");
+    applyButton.addEventListener('click', (event) => {
+        stylePropertyChanged(properties.style.value);
+    });
+
+    properties.fontSize.addEventListener('change', (event) => {
+        propertyChanged("fontSize", event.currentTarget.value);
+    });
+    properties.fontColor.addEventListener('change', (event) => {
+        propertyChanged("color", event.currentTarget.value);
+    });
+    properties.backgroundColor.addEventListener('change', (event) => {
+        propertyChanged("backgroundColor", event.currentTarget.value);
+    });
+
+    var textApplyButton = document.getElementById("textPropertyApply");
+    textApplyButton.addEventListener('click', (event) => {
+        textPropertyChanged(properties.text.value);
+    });
+}
+
+function textPropertyChanged(raw) {
+    for (var i = 0; i < selected.length; i++) {
+        var selectedNode = getNodeById(selected[i]);
+        if (selectedNode.type == "text") {
+            selectedNode.data.text = unescape(raw);
+            updateNodeElement(selectedNode);
+        }
+    }
+    if(selected.length>0){
+        saveState();
+       }
+}
+
+function stylePropertyChanged(raw) {
+    var styles = raw.trim().split(";");
+    var styleObject = {
+        backgroundColor: "#ffffff"
+    };
+    for (var i = 0; i < styles.length; i++) {
+        var styleSplit = styles[i].split(":");
+        if (styleSplit.length > 1) {
+            styleObject[styleSplit[0].trim()] = styleSplit[1].trim();
+        }
+    }
+    for (var i = 0; i < selected.length; i++) {
+        var selectedNode = getNodeById(selected[i]);
+        selectedNode.style = styleObject;
+        updateNodeElement(selectedNode);
+    }
+        if(selected.length>0){
+        saveState();
+       }
+    updateProperties();
+}
+
+function propertyChanged(name, value) {
+    for (var i = 0; i < selected.length; i++) {
+        var selectedNode = getNodeById(selected[i]);
+        selectedNode.style[name] = value;
+        updateNodeElement(selectedNode);
+        updateProperties();
+    }
+}
+var selectTargetCache = "";
+
+function setSelectTarget(id) {
+    selectTargetCache = id;
+    var nodeIds = Object.keys(data.library);
+    if (nodeIds.includes(id)) {
+        cycleIndex = nodeIds.indexOf(id);
+        updateProperties();
+    }
+}
+
+function updateProperties() {
+    if (getNodeById(selectTargetCache) == null) {
+        selectTargetCache = selected[0];
+    }
+    if (selectTargetCache != null) {
+        var styleString = "";
+        var node = getNodeById(selectTargetCache);
+        for (const [key, value] of Object.entries(node.style)) {
+            styleString += `${key}: ${value};\n`;
+        }
+        properties.style.value = styleString;
+        if(node.style.fontSize!=null){
+        properties.fontSize.value = node.style.fontSize;
+        }
+        if(node.style.fontColor!=null){
+        properties.fontColor.value = node.style.color;
+           }
+                if(node.style.backgroundColor!=null){
+        properties.backgroundColor.value = node.style.backgroundColor;
+                }
+        if (node.type == "text") {
+            properties.text.value = node.data.text;
+        }
+    }
+
+}
+
+function roundToDecimal(num, decimal = 2) {
+    var factor = Math.pow(10, decimal);
+    return Math.round(num * factor) / factor;
+}
+
+function updateHUD() {
+    var x = roundToDecimal(data.camera.position.x);
+    var y = roundToDecimal(data.camera.position.y);
+    var zoom = roundToDecimal(scale * 100);
+    var selNodes = selected.length;
+    var totNodes = Object.keys(data.library).length;
+    var statString = `z:${zoom}% x: ${x} y: ${y} s:${selNodes}/${totNodes}`;
+    hudStats.innerHTML = statString;
+}
+
+var clipBoard = "";
+var copiedIds = [];
+function copySelected(){
+    if(selected.length>0){
+        var clonedNodes = [];
+        copiedIds = [];
+        for(var i = 0;i<selected.length;i++){
+            var node = getNodeById(selected[i]);
+            if(node!=null){
+            clonedNodes.push(node);
+            copiedIds.push(node.id);
+        }
+        }
+        clipBoard = JSON.stringify(clonedNodes);
+        
+       }
+}
+
+function pasteSelected(){
+var jsonClones = clipBoard;
+    if(copiedIds.length>0){
+        var newIds = [];
+        var idConversions = [];
+       for(var i = 0;i<copiedIds.length;i++){
+           var oldId = copiedIds[i];
+           var newId = generateUUID();
+           newIds.push(newId);
+           jsonClones = jsonClones.replaceAll(oldId,newId);
+       }
+        var processedNodes = JSON.parse(jsonClones);
+        for(var i = 0;i<processedNodes.length;i++){
+            var processedNode = processedNodes[i];
+            var parentNode = getNodeById(processedNode.parent);
+            if(parentNode!=null){
+            appendChild(parentNode,processedNode);
+        }
+        }
+        appendNodes(processedNodes);
+        recreateElements();
+        clearSelection();
+        for(var i = 0;i<newIds.length;i++){
+            var newId = newIds[i];
+            var nodeEle = document.getElementById(newId);
+            selectElement(nodeEle,0);
+        }
+       }
 }

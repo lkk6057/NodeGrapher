@@ -1,241 +1,279 @@
 .main {
-	font-family: Tahoma, sans-serif !important;
-	font-size: 2vmin;
+    font-family: Tahoma, sans-serif !important;
+    font-size: 2vmin;
     line-height: 1em !important;
-    
+
 }
 
 .chart {
-	//background-color:blue;
-	height: 100%;
-	width: 100%
+    //background-color:blue;
+    height: 100%;
+    width: 100%
 }
 
 .absolute {
-	position: absolute;
+    position: absolute;
 }
 
 .camera {
-	position: absolute;
-	width: 1000000%;
-	transform-origin: top left;
-	height: 1000000%;
+    position: absolute;
+    width: 1000000%;
+    transform-origin: top left;
+    height: 1000000%;
 }
 
 node {
-    font-size:16px;
-	text-align: center;
-	padding: 1em;
-	border-radius: 0.5em !important;
-	transform: translate(-50%, -50%) !important;
-	background-color: white;
+    font-size: 16px;
+    text-align: center;
+    padding: 1em;
+    border-radius: 0.5em;
+    transform: translate(-50%, -50%) !important;
+    background-color: white;
     white-space: pre;
+    outline: none;
+    line-height: 1em;
 }
+
 .selected {
-    border:none !important;
-    outline:none !important;
-	background-color: rgba(217, 245, 255, 1) !important;
-	animation: border-pulsate 1s infinite
+    filter: sepia(100%) saturate(100%) hue-rotate(100deg);
+
 }
 
-@keyframes pulse {
-	0% {
-		transform: scale(0.95);
-		box-shadow: 0 0 0 0 rgba(0, 79, 152, 0.7);
-	}
-	70% {
-		transform: scale(1);
-		box-shadow: 0 0 0 10px rgba(0, 79, 152, 0);
-	}
-	100% {
-		transform: scale(0.95);
-		box-shadow: 0 0 0 0 rgba(0, 79, 152, 0);
-	}
-}
 
-@keyframes border-pulsate {
-	0% {
-		border-color: rgba(0, 150, 255, 0);
-	}
-	50% {
-		border-color: rgba(0, 150, 255, 0);
-	}
-	100% {
-		border-color: rgba(0, 150, 255, 1);
-	}
-}
 
 .selection {
-	position: fixed;
-	background-color: rgba(51, 144, 255, 0.5);
-	outline: dashed 3px rgba(217, 245, 255, 0.8);
+    position: fixed;
+    background-color: rgba(51, 144, 255, 0.5);
+    outline: dashed 3px rgba(217, 245, 255, 0.8);
 }
 
 body {
-	margin: 0;
-	overflow: hidden;
-	background-image: linear-gradient(to right, lightgray 1px, transparent 1px), linear-gradient(to bottom, lightgray 1px, transparent 1px);
+    margin: 0;
+    overflow: hidden;
+    background-image: linear-gradient(to right, lightgray 1px, transparent 1px), linear-gradient(to bottom, lightgray 1px, transparent 1px);
 }
 
-pre {
-	font-family: Tahoma, sans-serif !important;
-}
 
 line {
-	position: absolute;
-	background-color: black;
-	transform-origin: left;
-	z-index: -1;
-      //box-shadow: 0 1px 2px 0 rgba(0,0,0,0.3);
+    position: absolute;
+    background-color: black;
+    transform-origin: left;
+    z-index: -1;
+    //box-shadow: 0 1px 2px 0 rgba(0,0,0,0.3);
 }
 
 .card {
-box-shadow: 0 0.5em 1.5em 0 rgb(0 0 0 / 10%);
-    overflow:hidden;
+    box-shadow: 0 0.5em 1.5em 0 rgb(0 0 0 / 10%);
+    overflow: hidden;
 }
 
 
 .effects {
-	position: absolute;
+    position: absolute;
 }
 
 .tools {
-	//outline: 1px solid black;
-	position: absolute;
-	background-color: white;
-	z-index: 2;
-	align-content: center;
-    overflow:hidden;
+    //outline: 1px solid black;
+    position: absolute;
+    background-color: white;
+    z-index: 2;
+    align-content: center;
+    overflow: hidden;
     user-select: none;
+    border-radius: 1em;
 }
 
 .toolsHead {
-	width: 100%;
-	background-color: #5e60ce;
-	text-align: center;
-	color: white;
+    width: 100%;
+    background-color: #5e60ce;
+    text-align: center;
+    color: white;
 }
 
 .toolsTitle {
-    font-size:3em;
+    font-size: 3em;
     line-height: 1.5em;
 }
 
 .toolsBody {
-    bottom:0;
-    display:flex;
-    height:80%;
-flex-wrap: wrap;
+    bottom: 0;
+    display: flex;
+    height: 80%;
+    flex-wrap: wrap;
 }
 
 .tabShelf {
-    width:100%;
-	justify-content: center;
-	display: flex;
+    width: 100%;
+    justify-content: center;
+    display: flex;
     flex-wrap: wrap;
 }
 
 tabButton {
-	box-sizing: content-box;
-	padding: 0.5em;
-	flex-grow: 1;
-    flex-basis:20%;
-	background-color: #4ea8de;
-	text-align: center;
+    box-sizing: content-box;
+    padding: 0.5em;
+    flex-grow: 1;
+    flex-basis: 20%;
+    background-color: #4ea8de;
+    text-align: center;
 }
 
 .selectedTab {
-	background-color: transparent;
-	outline: 1px solid transparent;
+    background-color: transparent;
+    outline: 1px solid transparent;
 }
 
 tab {
-    position:absolute;
+    position: absolute;
     visibility: hidden;
 }
-control{
+
+control {
     display: block;
-    padding:1em;
+    padding: 0.5em;
 }
 
 bind {
     color: #c7254e;
-    font-style:bold;
+    font-style: bold;
     background-color: #f9f2f4;
     border-radius: 1em;
-    padding:0.5em;
+    padding: 0.5em;
 }
-.controlGroup{
-    font-size:0.8em;
-    margin:0.5em;
+
+.controlGroup {
+    font-size: 0.6em;
     text-align: center;
     border-radius: 0.5em;
     white-space: nowrap;
-        display:inline-block;
-        vertical-align: top;
-}
-.controlHeader{
-     background-color:mediumseagreen;
-    color:white;
-    padding:1em;
-    margin: 0;
-}
-.controlGroupBody{
-}
-.border-bottom{
-    border-bottom: 1px solid lightgray;
-}
-.border-bottom-black{
-    border-bottom: 1px solid black;
-}
-tool{
-    padding:0.5em;
-    margin:0.5em;
-    width:5em;
-    border-radius:1em;
-    color:white;
-	background-color: #4ea8de;
-
-}
-.activeToolItem{
-  background: 
-   linear-gradient(90deg,rgba(255,0,0,1) 0%,rgba(255,154,0,1) 10%, rgba(208,222,33,1) 20%, rgba(79,220,74,1) 30%, rgba(63,218,216,1) 40%, rgba(47,201,226,1) 50%, rgba(28,127,238,1) 60%, rgba(95,21,242,1) 70%, rgba(186,12,248,1) 80%, rgba(251,7,217,1) 90%, rgba(255,0,0,1) 100%) 
-   0 0/300% 100%;
-  animation: rainbowMove 2s linear infinite;
-
-}
-@keyframes rainbowMove {
-  to {background-position:-300%,0 }
-}
-
-.toolGroupBody{
-    display:flex;
-    flex-wrap:wrap;
-    padding:0.5em;
-    justify-content: center;
-}
-.toolGroupHeader{
-    padding:1em;
-    background-color:#4895EF;
-}
-.toolGroup{
-    color:white;
     margin:1em;
-    text-align: center;
-        display:inline-block;
-    vertical-align: middle;
-    width:15em;
-    border-radius: 0.5em;
+    flex-grow:1;
     
 }
-
-i{
-    color:gray;
+.flex{
+    display:flex;
+    flex-wrap:wrap;
 }
+.controlHeader {
+    background-color: mediumseagreen;
+    color: white;
+    padding: 0.5em;
+}
+
+.controlGroupBody {}
+
+.border-bottom {
+    border-bottom: 1px solid lightgray;
+}
+
+.border-bottom-black {
+    border-bottom: 1px solid black;
+}
+
+tool {
+    padding: 0.5em;
+    margin: 0.5em;
+    width: 5em;
+    border-radius: 1em;
+    color: white;
+    background-color: #4ea8de;
+
+}
+
+.activeToolItem {
+    background:
+        linear-gradient(90deg, rgba(255, 0, 0, 1) 0%, rgba(255, 154, 0, 1) 10%, rgba(208, 222, 33, 1) 20%, rgba(79, 220, 74, 1) 30%, rgba(63, 218, 216, 1) 40%, rgba(47, 201, 226, 1) 50%, rgba(28, 127, 238, 1) 60%, rgba(95, 21, 242, 1) 70%, rgba(186, 12, 248, 1) 80%, rgba(251, 7, 217, 1) 90%, rgba(255, 0, 0, 1) 100%) 0 0/300% 100%;
+    animation: rainbowMove 2s linear infinite;
+
+}
+
+@keyframes rainbowMove {
+    to {
+        background-position: -300%, 0
+    }
+}
+
+.toolGroupBody {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 0.5em;
+    justify-content: center;
+}
+
+.toolGroupHeader {
+    padding: 1em;
+    background-color: #4895EF;
+}
+
+.toolGroup {
+    color: white;
+    margin: 1em;
+    text-align: center;
+    width: 15em;
+    border-radius: 0.5em;
+    flex-grow: 1;
+}
+
+setting {
+    display: block;
+}
+
+.settingsGroup {
+    margin: 1em;
+}
+
+property {
+    display: block;
+    margin: 1em;
+}
+
+.propertyTextArea {
+    width: 30vmin;
+    height: 15vmin;
+        margin-top:0.5em;
+        margin-bottom:0.5em;
+    display: block;
+    
+}
+.propertyColor{
+    width:3vmin;
+    height:3vmin;
+    border:none !important;
+}
+.propertyNumber{
+        width:6vmin;
+    height:2vmin;
+}
+.propertiesGroup {
+    display: block;
+}
+.applyButton{
+      background-color: #4CAF50; /* Green */
+  color: white;
+  padding: 1em;
+    width:3em;
+    border-radius: 1em;
+  text-align: center;
+}
+.applyButton:hover{
+    background-color: ;
+}
+hud {
+    position: fixed;
+    font-size: 0.7em;
+    bottom: 0px;
+    user-select: none;
+    margin:0.5em;
+}
+
+i {
+    color: gray;
+}
+
 .visible {
-	visibility: visible !important;
+    visibility: visible !important;
 }
 
 .invisible {
-	visibility: hidden;
+    visibility: hidden;
 }

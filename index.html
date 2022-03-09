@@ -1,91 +1,142 @@
 <html>
    <head>
-      <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
-      <script src="https://kit.fontawesome.com/c8b450094c.js" crossorigin="anonymous"></script>
-      <link rel="stylesheet" href="src/styles.css">
-      <script src="src/index.js"></script>
-   </head>
-   <body>
-      <div id = "main" class = "main">
-         <div id = "tools" class = "tools card">
-            <div id = "toolsHead" class = "toolsHead">
-                <span class = "card-header toolsTitle">Tools</span>
-                <div class = "tabShelf">
-                    
-                    
-                    <tabButton target = "tools">Tools</tabButton>
-                    <tabButton target = "options">Options</tabButton>
-                    <tabButton target = "controls">Controls</tabButton>
-                
-                </div>
-             </div>
-            <div id = "toolsBody" class = "toolsBody">
-               <tab name = "tools" width = 45 height = 45>
-                   <div class = "toolGroup card">
-                       <div class = "toolGroupHeader">Create New Node (DRAG)</div>
-                       <div class = "toolGroupBody">
-                           <tool target = "text">Text</tool>
-                                                  
-                       </div>
-                   </div>
-               </tab>
-                <tab name = "options" width = 45 height = 45>
-               </tab>
-                <tab name = "controls"  width = 80 height = 70>                      
-    
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+    <script src="https://kit.fontawesome.com/c8b450094c.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="src/styles.css">
+    <script src="src/index.js"></script>
+</head>
 
-                    
-                                     <div class = "controlGroup card">
-                   
-                             <div class = "controlHeader">Scale Controls:</div>
-                                         <control>Scale Selected: <bind>SHIFT + <i class="fas fa-mouse"></i> SCROLL</bind></control>
-                    <control>Circle Scale: <bind>SHIFT + C + <i class="fas fa-mouse"></i> SCROLL Up</bind></control>
-                    <control>Reset Circle: <bind>SHIFT + C + <i class="fas fa-mouse"></i> SCROLL Down</bind></control>
-                    <control>Rotate Circle: <bind>SHIFT + Alt + C <i class="fas fa-mouse"></i> SCROLL</bind></control>
-                    <control>Change Circle Angle: <bind>SHIFT + S + <i class="fas fa-mouse"></i> SCROLL</bind></control>
-                   </div>   
-                                                                                                <div class = "controlGroup card">
-                   
-                             <div class = "controlHeader">Movement Controls:</div>
-                                         <control>Move Selected: <bind>SHIFT + <i class="fas fa-mouse"></i> CLICK & DRAG</bind></control>
-                                        <control>Rotate Around Mouse: <bind>SHIFT + R + <i class="fas fa-mouse"></i> SCROLL</bind></control>
-                                        <control>Order Square: <bind>V</bind></control>
-                                        <control>Order Linear: <bind>ALT + V</bind></control>
-                   </div> 
-                                                       <div class = "controlGroup card">
-                   
-                             <div class = "controlHeader">Selection Controls:</div>
-                                <div class = "controlGroupBody">
-                                         <control class = "border-bottom">Single Select/Deselect: <bind>SHIFT + <i class="fas fa-mouse"></i> CLICK</bind></control>
-                                         <control class = "border-bottom">Box Select: <bind>SHIFT + B + <i class="fas fa-mouse"></i> DRAG</bind></control>
-                                         <control>Select/Deselect All: <bind>A</bind></control>
-                                         </div>
-                   </div>
-    
-                                                                                            <div class = "controlGroup card">
-                   
-                             <div class = "controlHeader">Node Controls:</div>
-                                         <control>Delete Selected: <bind>DELETE/BACKSPACE</bind></control>
-                                          <control>Undo: <bind>CTRL + Z</bind></control>
-                                          <control>Redo: <bind>CTRL + SHIFT + Z</bind></control>   
-                   </div>
-                                                                                <div class = "controlGroup card">
-                   
-                             <div class = "controlHeader">Node Tree Controls:</div>
-                                         <control>Set Parent of Selected: <bind>CTRL/CMD + <i class="fas fa-mouse"></i> CLICK</bind></control>
-                   </div>
+<body>
+    <div id="main" class="main">
+        <hud><span id="hudStats"></span></hud>
+        <div id="tools" class="tools card">
+            <div id="toolsHead" class="toolsHead">
+                <span class="card-header toolsTitle">Tools</span>
+                <div class="tabShelf">
+
+
+                    <tabButton target="tools">Tools</tabButton>
+                    <tabButton target="properties">Properties</tabButton>
+                    <tabButton target="options">Options</tabButton>
+                    <tabButton target="controls">Controls</tabButton>
+
+                </div>
+            </div>
+            <div id="toolsBody" class="toolsBody">
+                <tab name="tools" class = "flex" width=45 height=45>
+                    <div class="toolGroup card">
+                        <div class="toolGroupHeader">Create New Node (Drag)</div>
+                        <div class="toolGroupBody">
+                            <tool target="text">Text</tool>
+
+                        </div>
+                    </div>
+                </tab>
+                <tab name="properties" width=45 height=70>
+                    <div class="propertiesGroup">
+
+                        <property><label>Style: </label><textarea id="propertyStyle" class="propertyTextArea"></textarea><div id="stylePropertyApply" class = "applyButton">Apply</div></property>
+                        <property><label>Font Size: </label><input type="number" class = "propertyNumber" id="propertyFontSize" value=16 min=4 max=640><label> px</label></property>
+                        <property><label>Text Color: </label><input type="color" class = "propertyColor" id="propertyFontColor"></property>
+                        <property><label>Background Color: </label><input type="color" class = "propertyColor" id="propertyBackgroundColor"></property>
+                    </div>
+                    <property><label>Text: </label><textarea id="propertyText" class="propertyTextArea"></textarea><div id="textPropertyApply" class = "applyButton">Apply</div></property>
+                </tab>
+                <tab name="options" width=45 height=45>
+                    <div class="settingsGroup">
+                        <setting>
+                            <input type="number" target="gridSize" name="option" value="40" min="20" max="200">
+                            <label> Grid Size</label>
+                        </setting>
+                        <setting>
+                            <input type="checkbox" target="grid" name="option">
+                            <label> Grid</label>
+                        </setting>
+
+                    </div>
+                </tab>
+                <tab name="controls" class = "flex" width=60 height=60>
+
+
+
+                    <div class="controlGroup card">
+
+                        <div class="controlHeader">Scale Controls:</div>
+                        <control>Scale Selected: <bind>SHIFT + <i class="fas fa-mouse"></i> SCROLL</bind>
+                        </control>
+                        <control>Scale X Axis: <bind>SHIFT + X + <i class="fas fa-mouse"></i> SCROLL</bind>
+                        </control>
+                        <control>Scale Y Axis: <bind>SHIFT + X + ALT + <i class="fas fa-mouse"></i> SCROLL</bind>
+                        </control>
+                        <control>Circle Scale: <bind>SHIFT + C + <i class="fas fa-mouse"></i> SCROLL UP</bind>
+                        </control>
+                        <control>Reset Circle: <bind>SHIFT + C + <i class="fas fa-mouse"></i> SCROLL DOWN</bind>
+                        </control>
+                        <control>Rotate Circle: <bind>SHIFT + Alt + C <i class="fas fa-mouse"></i> SCROLL</bind>
+                        </control>
+                        <control>Change Circle Angle: <bind>SHIFT + S + <i class="fas fa-mouse"></i> SCROLL</bind>
+                        </control>
+                    </div>
+                    <div class="controlGroup card">
+
+                        <div class="controlHeader">Movement Controls:</div>
+                        <control>Move Selected: <bind>SHIFT + <i class="fas fa-mouse"></i> CLICK & DRAG</bind>
+                        </control>
+                        <control>Rotate Around Mouse: <bind>SHIFT + R + <i class="fas fa-mouse"></i> SCROLL</bind>
+                        </control>
+                        <control>Order Square: <bind>V</bind>
+                        </control>
+                        <control>Order Linear: <bind>ALT + V</bind>
+                        </control>
+                        <control>Cycle Nodes: <bind>LEFT/RIGHT ARROWS</bind>
+                        </control>
+                        <control>Reset Orientation: <bind>F</bind>
+                        </control>
+                    </div>
+                                        <div class="controlGroup card">
+
+                        <div class="controlHeader">Node Controls:</div>
+                        <control>Delete Selected: <bind>DELETE/BACKSPACE</bind>
+                        </control>
+                        <control>Undo: <bind>CTRL + Z</bind>
+                        </control>
+                        <control>Redo: <bind>CTRL + SHIFT + Z</bind>
+                        </control>
+                        <control>Copy: <bind>CTRL + C</bind>
+                        </control>
+                        <control>Paste: <bind>CTRL + V</bind>
+                        </control>
+                    </div>
+                    <div class="controlGroup card">
+
+                        <div class="controlHeader">Selection Controls:</div>
+                        <div class="controlGroupBody">
+                            <control>Single Select/Deselect: <bind>SHIFT + <i class="fas fa-mouse"></i> CLICK</bind>
+                            </control>
+                            <control>Box Select: <bind>SHIFT + B + <i class="fas fa-mouse"></i> DRAG</bind>
+                            </control>
+                            <control>Select/Deselect All: <bind>A</bind>
+                            </control>
+                        </div>
+                    </div>
+
+                    <div class="controlGroup card">
+
+                        <div class="controlHeader">Node Tree Controls:</div>
+                        <control>Set Parent of Selected: <bind>CTRL + <i class="fas fa-mouse"></i> CLICK</bind>
+                        </control>
+                    </div>
                 </tab>
             </div>
-         </div>
-         <div id = "chart" class = "chart">
-            <camera id = "camera" class = "camera">
-               <div id = "elements" class = "elements"></div>
-               <div id = "effects" class = "effects">
-               </div>
+        </div>
+        <div id="chart" class="chart">
+            <camera id="camera" class="camera">
+                <div id="elements" class="elements"></div>
+                <div id="effects" class="effects">
+                </div>
             </camera>
-         </div>
-         <div class = "selection" id = "selection">
-         </div>
-      </div>
-   </body>
-</html>
+        </div>
+        <div class="selection" id="selection">
+        </div>
+    </div>
+</body></html>
