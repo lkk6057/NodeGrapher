@@ -98,6 +98,7 @@ function initializeDocument() {
     properties.text = document.getElementById("propertyText");
     initializeTools();
     initializeToolItems();
+    updateSaveOptions();
     document.addEventListener("mousedown", click);
 
     document.addEventListener("mousemove", mouseMove);
@@ -154,7 +155,7 @@ function initializeObserver() {
 }
 
 function unfocusWindow(e) {
-    keyStates = [];
+    clearKeys();
 }
 var windowSize;
 
@@ -171,7 +172,7 @@ function resizeWindow(e) {
 }
 
 function zoom(event) {
-    if (!nodeFocused() && !toolFocused()&&!isDescendant(event.target,tools)) {
+    if (!nodeFocused() && !toolFocused() && !isDescendant(event.target, tools)) {
         var delta = event.deltaY;
         var deltaMag = Math.abs(delta);
         var zoomFactor = 1 - (delta * 0.001);
@@ -382,14 +383,15 @@ function orderSelected() {
 function keyDown(e) {
 
     keyStates[e.keyCode] = true;
+    console.log(e.keyCode);
     inputKey(e);
 
 }
 
 function keyUp(e) {
-
+    console.log("r" + e.keyCode);
     keyStates[e.keyCode] = false;
-
+    releaseKey(e);
 }
 
 function nodeFocused() {
@@ -406,13 +408,17 @@ function unfocus() {
     }
 }
 
+function clearKeys() {
+    keyStates = [];
+}
+
 function inputKey(event) {
     if (!nodeFocused() && !toolFocused()) {
 
         switch (event.keyCode) {
             case KeyBinds.UNDO:
                 if (!updated) {
-                    event.preventDefault();
+                    //event.preventDefault();
                     if (keyStates[KeyBinds.MOVE]) {
                         redo();
                     } else {
@@ -424,17 +430,16 @@ function inputKey(event) {
                 toggleAllSelect();
                 break;
             case KeyBinds.COPY:
-                if(!keyStates[KeyBinds.MOVE]&&keyStates[KeyBinds.CTRL]){
-                   copySelected();
-                   }
-            break;
+                if (!keyStates[KeyBinds.MOVE] && keyStates[KeyBinds.CTRL]) {
+                    copySelected();
+                }
+                break;
             case KeyBinds.ORDERSORT:
-                if(!keyStates[KeyBinds.CTRL]){
-                orderSelected();
-        }
-        else{
-            pasteSelected();
-        }
+                if (!keyStates[KeyBinds.CTRL]) {
+                    orderSelected();
+                } else {
+                    pasteSelected();
+                }
                 break;
             case KeyBinds.RESET:
                 resetOrientation();
@@ -453,6 +458,15 @@ function inputKey(event) {
         }
     }
 }
+
+function releaseKey(e){
+    switch(e.keyCode){
+        case KeyBinds.CTRL:
+            clearKeys();
+            break;
+           }
+}
+
 var cycleIndex = 0;
 
 function cycleNode(delta) {
@@ -573,7 +587,7 @@ function click(e) {
             } else {
                 e.preventDefault();
             }
-                            selectElement(target);
+            selectElement(target);
         } else {
             if (!keyStates[KeyBinds.MOVE] && currentTool == null && !isDescendant(e.target, tools)) {
                 queueClear = true;
@@ -616,12 +630,11 @@ function clearSelection() {
     for (var i = selectedIds.length - 1; i >= 0; i--) {
         var selectedId = selectedIds[i];
         var element = document.getElementById(selectedId);
-        if(element!=null){
-        selectElement(element, 1);
-    }
-        else{
+        if (element != null) {
+            selectElement(element, 1);
+        } else {
             var nullIndex = selected.indexOf(selectedId);
-            selected.splice(nullIndex,1);
+            selected.splice(nullIndex, 1);
         }
     }
 
@@ -645,10 +658,9 @@ function toggleAllSelect() {
         var allElements = getAllElements();
         for (var i = 0; i < allElements.length; i++) {
             var element = allElements[i];
-            if(keyStates[KeyBinds.MOVE]){
-            selectElement(element, -1);
-        }
-            else{
+            if (keyStates[KeyBinds.MOVE]) {
+                selectElement(element, -1);
+            } else {
                 selectElement(element, 0);
             }
         }
@@ -701,9 +713,9 @@ function selectElement(element, mode = -1) {
                 break;
         }
         highlightElement(element);
-        if(selectTargetCache.length==0){
-           setSelectTarget(element.id);
-           }
+        if (selectTargetCache.length == 0) {
+            setSelectTarget(element.id);
+        }
     }
 
     updateHUD();
@@ -841,7 +853,7 @@ function repositionElements() {
 function load() {
 
     var origin = generateTextNode("origin");
-
+    
     var lib = JSON.parse(localStorage.getItem("library"));
     if (lib != null) {
         data.library = lib;
@@ -947,12 +959,13 @@ function updateLibrary(node) {
     return data.library[node.id];
 }
 
-function appendNodes(nodes){
-    for(var i = 0;i<nodes.length;i++){
+function appendNodes(nodes) {
+    for (var i = 0; i < nodes.length; i++) {
         var node = nodes[i];
         updateLibrary(node);
     }
 }
+
 function generateNodeElement(node) {
     var nodeEle;
     var nodeStyle = "";
@@ -1808,9 +1821,9 @@ function textPropertyChanged(raw) {
             updateNodeElement(selectedNode);
         }
     }
-    if(selected.length>0){
+    if (selected.length > 0) {
         saveState();
-       }
+    }
 }
 
 function stylePropertyChanged(raw) {
@@ -1829,9 +1842,9 @@ function stylePropertyChanged(raw) {
         selectedNode.style = styleObject;
         updateNodeElement(selectedNode);
     }
-        if(selected.length>0){
+    if (selected.length > 0) {
         saveState();
-       }
+    }
     updateProperties();
 }
 
@@ -1865,15 +1878,15 @@ function updateProperties() {
             styleString += `${key}: ${value};\n`;
         }
         properties.style.value = styleString;
-        if(node.style.fontSize!=null){
-        properties.fontSize.value = node.style.fontSize;
+        if (node.style.fontSize != null) {
+            properties.fontSize.value = node.style.fontSize;
         }
-        if(node.style.fontColor!=null){
-        properties.fontColor.value = node.style.color;
-           }
-                if(node.style.backgroundColor!=null){
-        properties.backgroundColor.value = node.style.backgroundColor;
-                }
+        if (node.style.fontColor != null) {
+            properties.fontColor.value = node.style.color;
+        }
+        if (node.style.backgroundColor != null) {
+            properties.backgroundColor.value = node.style.backgroundColor;
+        }
         if (node.type == "text") {
             properties.text.value = node.data.text;
         }
@@ -1898,57 +1911,63 @@ function updateHUD() {
 
 var clipBoard = "";
 var copiedIds = [];
-function copySelected(){
-    if(selected.length>0){
+
+function copySelected() {
+    if (selected.length > 0) {
         var clonedNodes = [];
         copiedIds = [];
-        for(var i = 0;i<selected.length;i++){
+        for (var i = 0; i < selected.length; i++) {
             var node = getNodeById(selected[i]);
-            if(node!=null){
-            clonedNodes.push(node);
-            copiedIds.push(node.id);
-        }
+            if (node != null) {
+                clonedNodes.push(node);
+                copiedIds.push(node.id);
+            }
         }
         clipBoard = JSON.stringify(clonedNodes);
-        
-       }
+
+    }
 }
 
-function pasteSelected(){
-var jsonClones = clipBoard;
-    if(copiedIds.length>0){
+function pasteSelected() {
+    var jsonClones = clipBoard;
+    if (copiedIds.length > 0) {
         var newIds = [];
         var idConversions = [];
-       for(var i = 0;i<copiedIds.length;i++){
-           var oldId = copiedIds[i];
-           var newId = generateUUID();
-           newIds.push(newId);
-           jsonClones = jsonClones.replaceAll(oldId,newId);
-       }
+        for (var i = 0; i < copiedIds.length; i++) {
+            var oldId = copiedIds[i];
+            var newId = generateUUID();
+            newIds.push(newId);
+            jsonClones = jsonClones.replaceAll(oldId, newId);
+        }
         var processedNodes = JSON.parse(jsonClones);
-        for(var i = 0;i<processedNodes.length;i++){
+        for (var i = 0; i < processedNodes.length; i++) {
             var processedNode = processedNodes[i];
-            
+
             var activeChildren = [];
-            for(var c = 0;c<processedNode.children.length;c++){
-                var child= processedNode.children[c];
-                if(newIds.includes(child)){
-                   activeChildren.push(child);
-                   }
+            for (var c = 0; c < processedNode.children.length; c++) {
+                var child = processedNode.children[c];
+                if (newIds.includes(child)) {
+                    activeChildren.push(child);
+                }
             }
             processedNode.children = activeChildren;
             var parentNode = getNodeById(processedNode.parent);
-            if(parentNode!=null){
-            appendChild(parentNode,processedNode);
-        }
+            if (parentNode != null) {
+                appendChild(parentNode, processedNode);
+            }
         }
         appendNodes(processedNodes);
         recreateElements();
         clearSelection();
-        for(var i = 0;i<newIds.length;i++){
+        for (var i = 0; i < newIds.length; i++) {
             var newId = newIds[i];
             var nodeEle = document.getElementById(newId);
-            selectElement(nodeEle,0);
+            selectElement(nodeEle, 0);
         }
-       }
+    }
+}
+
+function updateSaveOptions(){
+    var saveDrop = document.getElementById("saveDropDown");
+    saveDrop.innerHTML = "";
 }

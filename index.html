@@ -14,7 +14,7 @@
                 <span class="card-header toolsTitle">Tools</span>
                 <div class="tabShelf">
 
-
+                    <tabButton target="save">Save</tabButton>
                     <tabButton target="tools">Tools</tabButton>
                     <tabButton target="properties">Properties</tabButton>
                     <tabButton target="options">Options</tabButton>
@@ -23,7 +23,20 @@
                 </div>
             </div>
             <div id="toolsBody" class="toolsBody">
-                <tab name="tools" class = "flex" width=45 height=45>
+                <tab name="save" class="flex" width=45 height=45>
+                    <div class="saveGroup">
+                        <p><label>Current Save: </label><i id = "currentSave"></i></p>
+                        <label>Save As: </label><input placeholder="Save Name" id="newSaveName" class = "propertyText"><div class="greenButton">Save</div>
+                        <p><label>Load Save: </label>  <select name="saves" id="saveDropDown" class = "propertyText">
+        <option value="none"></option>
+    <option value="volvo">Volvo</option>
+    <option value="saab">Saab</option>
+    <option value="opel">Opel</option>
+    <option value="audi">Audi</option>
+  </select></p>
+                    </div>
+                </tab>
+                <tab name="tools" class="flex" width=45 height=45>
                     <div class="toolGroup card">
                         <div class="toolGroupHeader">Create New Node (Drag)</div>
                         <div class="toolGroupBody">
@@ -35,12 +48,16 @@
                 <tab name="properties" width=45 height=70>
                     <div class="propertiesGroup">
 
-                        <property><label>Style: </label><textarea id="propertyStyle" class="propertyTextArea"></textarea><div id="stylePropertyApply" class = "applyButton">Apply</div></property>
-                        <property><label>Font Size: </label><input type="number" class = "propertyNumber" id="propertyFontSize" value=16 min=4 max=640><label> px</label></property>
-                        <property><label>Text Color: </label><input type="color" class = "propertyColor" id="propertyFontColor"></property>
-                        <property><label>Background Color: </label><input type="color" class = "propertyColor" id="propertyBackgroundColor"></property>
+                        <property><label>Style: </label><textarea id="propertyStyle" class="propertyTextArea"></textarea>
+                            <div id="stylePropertyApply" class="greenButton">Apply</div>
+                        </property>
+                        <property><label>Font Size: </label><input type="number" class="propertyNumber" id="propertyFontSize" value=16 min=4 max=640><label> px</label></property>
+                        <property><label>Text Color: </label><input type="color" class="propertyColor" id="propertyFontColor"></property>
+                        <property><label>Background Color: </label><input type="color" class="propertyColor" id="propertyBackgroundColor"></property>
                     </div>
-                    <property><label>Text: </label><textarea id="propertyText" class="propertyTextArea"></textarea><div id="textPropertyApply" class = "applyButton">Apply</div></property>
+                    <property><label>Text: </label><textarea id="propertyText" class="propertyTextArea"></textarea>
+                        <div id="textPropertyApply" class="greenButton">Apply</div>
+                    </property>
                 </tab>
                 <tab name="options" width=45 height=45>
                     <div class="settingsGroup">
@@ -55,7 +72,7 @@
 
                     </div>
                 </tab>
-                <tab name="controls" class = "flex" width=60 height=60>
+                <tab name="controls" class="flex" width=60 height=60>
 
 
 
@@ -93,7 +110,7 @@
                         <control>Reset Orientation: <bind>F</bind>
                         </control>
                     </div>
-                                        <div class="controlGroup card">
+                    <div class="controlGroup card">
 
                         <div class="controlHeader">Node Controls:</div>
                         <control>Delete Selected: <bind>DELETE/BACKSPACE</bind>
