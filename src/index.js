@@ -1,4 +1,9 @@
 window.onload = initialize;
+var graphSaves;
+var currentGraphName;
+var currentGraphSave;
+var saveNameField;
+var saveButton;
 var main;
 var chart;
 var camera;
@@ -96,9 +101,11 @@ function initializeDocument() {
     properties.fontColor = document.getElementById("propertyFontColor");
     properties.backgroundColor = document.getElementById("propertyBackgroundColor");
     properties.text = document.getElementById("propertyText");
+    saveNameField = document.getElementById("newSaveName")
+    saveButton = document.getElementById("saveButton");
     initializeTools();
     initializeToolItems();
-    updateSaveOptions();
+    initializeSaves();
     document.addEventListener("mousedown", click);
 
     document.addEventListener("mousemove", mouseMove);
@@ -383,13 +390,11 @@ function orderSelected() {
 function keyDown(e) {
 
     keyStates[e.keyCode] = true;
-    console.log(e.keyCode);
     inputKey(e);
 
 }
 
 function keyUp(e) {
-    console.log("r" + e.keyCode);
     keyStates[e.keyCode] = false;
     releaseKey(e);
 }
@@ -554,7 +559,8 @@ function loadSave() {
 
 function saveData() {
     var library = JSON.stringify(data.library);
-    localStorage.setItem("library", library);
+    currentGraphSave.library = library;
+    
 }
 
 function saveCamera() {
@@ -562,12 +568,32 @@ function saveCamera() {
         position: data.camera.position,
         scale: scale
     });
-    localStorage.setItem("camera", cam);
+    currentGraphSave.camera = cam;
+}
+
+function saveCurrentGraph(){
+            var saveJSON = JSON.stringify(currentGraphSave);
+    localStorage.setItem("currentGraphSave",saveJSON);
+}
+
+function saveGraphs(){
+            if(currentGraphName!=null&&currentGraphName.length>0){
+            graphSaves[currentGraphName] = currentGraphSave;
+               }
+    
+                var saveJSON = JSON.stringify(graphSaves);
+    localStorage.setItem("graphSaves",saveJSON);
 }
 
 function saveAll() {
     saveData();
     saveCamera();
+    saveCurrentGraph();
+    saveGraphs();
+}
+
+function storeSave(){
+    
 }
 var queueClear = false;
 
@@ -854,21 +880,59 @@ function load() {
 
     var origin = generateTextNode("origin");
     
-    var lib = JSON.parse(localStorage.getItem("library"));
-    if (lib != null) {
-        data.library = lib;
-
-    }
-    var cam = JSON.parse(localStorage.getItem("camera"));
-    if (cam != null) {
-        data.camera.position = cam.position;
-        scale = cam.scale;
-    }
+    currentGraphName = localStorage.getItem("currentGraphName");
+    currentGraphSave = JSON.parse(localStorage.getItem("currentGraphSave"));
+    graphSaves = JSON.parse(localStorage.getItem("graphSaves"));
+    
+    if(graphSaves==null){
+        graphSaves = {};
+       }
+        if(currentGraphName==null){
+        currentGraphName = "";
+       }
+    if(currentGraphSave == null){
+       currentGraphSave = {};
+       }
+    
+    if(currentGraphName!=null){
+    loadGraphName(currentGraphName);
+}
+    else if(currentGraphSave!=null){
+            loadGraphSave(currentGraphSave);
+            }
+    
+        updateSaveOptions();
+    
     scaleCamera();
     render();
     shiftElements();
 }
 
+function loadGraphName(graphName){
+    if(graphSaves!=null&&graphName!=null){
+       var graphSave = graphSaves[graphName];
+        if(graphSave!=null){
+            localStorage.setItem("currentGraphName",graphName);
+           loadGraphSave(graphSave);
+           }
+       }
+}
+
+function loadGraphSave(graphSave){
+            if(graphSave!=null){
+               var lib = graphSave.library;
+    if (lib != null) {
+        data.library = lib;
+
+    }
+    var cam = graphSave.camera;
+    if (cam != null) {
+        data.camera.position = cam.position;
+        scale = cam.scale;
+    }
+    saveAll();
+           }
+}
 function scaleCamera() {
     camera.style.transform = `scale(${scale})`;
 }
@@ -1966,8 +2030,56 @@ function pasteSelected() {
         }
     }
 }
-
+function initializeSaves(){
+            saveNameField.addEventListener('input', (event) => {
+        saveFieldChange();
+    });
+        saveButton.addEventListener('click', (event) => {
+        saveAs();
+    });
+}
+function saveFieldChange(){
+    saveName = saveNameField.value;
+    if(graphSaves[saveName]==null){
+       saveButton.className = "greenButton";
+        saveButton.innerHTML = "Save New";
+       }
+    else{
+        if(saveName==currentGraphName){
+                  saveButton.className = "greenButton";
+        saveButton.innerHTML = "Save";
+           }
+        else{
+                           saveButton.className = "greenButton danger";
+        saveButton.innerHTML = "Overwrite";   
+        }
+    }
+}
+function saveAs(){
+    saveName = saveNameField.value;
+    if(saveName.length>0){
+        currentGraphName = saveName;
+        saveAll();
+    }
+    else{
+            saveNameField.value = "";
+    }
+}
 function updateSaveOptions(){
     var saveDrop = document.getElementById("saveDropDown");
     saveDrop.innerHTML = "";
+    var noneOption = document.createElement("OPTION");
+    noneOption.value = "none";
+    saveDrop.appendChild(noneOption);
+    
+    if(graphSaves!=null){
+        var graphNames = Object.keys(graphSaves);
+       for(var i = 0;i<graphNames.length;i++){
+           var graphName = graphNames[i];
+           var option = document.createElement("OPTION");
+           option.value = graphName;
+           option.innerHTML = graphName;
+           saveDrop.appendChild(option);
+       }
+       }
 }

@@ -35,8 +35,8 @@ node {
 }
 
 .selected {
-    filter: sepia(100%) saturate(100%) hue-rotate(100deg);
-
+    filter: sepia(100%) saturate(150%) hue-rotate(100deg);
+    box-shadow: none !important;
 }
 
 
@@ -254,14 +254,16 @@ property {
     height:3vmin;
 }
 .greenButton{
-      background-color: #4CAF50; /* Green */
+      background-color: #4CAF50;
   color: white;
   padding: 0.5em;
-    width:3em;
+    width:5em;
     border-radius: 1em;
   text-align: center;
 }
-
+.danger{
+          background-color: #FF0000; 
+}
 .saveGroup{
     margin:1em;
     display:block;
