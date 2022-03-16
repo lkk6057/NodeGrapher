@@ -4,6 +4,12 @@ var currentGraphName;
 var currentGraphSave;
 var saveNameField;
 var saveButton;
+var deleteButton;
+var defaultOptionsButton;
+var saveDrop;
+var exportField;
+var importButton;
+var exportButton;
 var main;
 var chart;
 var camera;
@@ -57,11 +63,19 @@ var mousePos = {
 var keyStates = [];
 var settings = {
     scaleMode: "mouse",
-    grid: false,
-    gridSize: 40,
+    grid: true,
+    gridSize: 50
+
+}
+var defaultSettings = {
+    scaleMode: "mouse",
+    grid: true,
+    gridSize: 50
+
+}
+var circleSettings = {
     circleFactor: 1,
     circleOffset: 0
-
 }
 var data = {
     library: {},
@@ -103,10 +117,19 @@ function initializeDocument() {
     properties.text = document.getElementById("propertyText");
     saveNameField = document.getElementById("newSaveName")
     saveButton = document.getElementById("saveButton");
+    deleteButton = document.getElementById("deleteButton");
+    defaultOptionsButton = document.getElementById("defaultOptionsButton");
+    saveDrop = document.getElementById("saveDropDown")
+    exportField = document.getElementById("exportField")
+    importButton = document.getElementById("importButton");
+    exportButton = document.getElementById("exportButton");
     initializeTools();
     initializeToolItems();
     initializeSaves();
+
     document.addEventListener("mousedown", click);
+
+    document.addEventListener("mousedown", bodyDrag);
 
     document.addEventListener("mousemove", mouseMove);
 
@@ -114,7 +137,7 @@ function initializeDocument() {
 
     document.addEventListener("keyup", keyUp);
 
-    window.addEventListener("unload", saveCamera);
+    window.addEventListener("unload", saveAll);
 
     window.addEventListener("blur", unfocusWindow);
 
@@ -190,21 +213,21 @@ function zoom(event) {
             if (keyStates[KeyBinds.CIRCLESCALE]) {
                 var changeRate = 0.0002;
                 if (keyStates[KeyBinds.ALTERNATE]) {
-                    settings.circleOffset += delta * changeRate;
-                    if (settings.circleOffset > 1) {
-                        settings.circleOffset = 0;
-                    } else if (settings.circleOffset < 0) {
-                        settings.circleOffset = 1;
+                    circleSettings.CircleOffset += delta * changeRate;
+                    if (circleSettings.CircleOffset > 1) {
+                        circleSettings.CircleOffset = 0;
+                    } else if (circleSettings.CircleOffset < 0) {
+                        circleSettings.CircleOffset = 1;
                     }
                     circleScaleSelected(0.5);
                 } else if (keyStates[KeyBinds.RADIUS]) {
-                    settings.circleFactor -= delta * changeRate;
-                    settings.circleFactor = clamp(settings.circleFactor, 0, 1);
+                    circleSettings.CircleFactor -= delta * changeRate;
+                    circleSettings.CircleFactor = clamp(circleSettings.CircleFactor, 0, 1);
                     circleScaleSelected(0.5);
                 } else {
                     if (delta > 0) {
-                        settings.circleFactor = 1;
-                        settings.circleOffset = 0;
+                        circleSettings.CircleFactor = 1;
+                        circleSettings.CircleOffset = 0;
                     }
                     circleScaleSelected(0.5);
                 }
@@ -285,14 +308,14 @@ function scaleSelected(zoomFactor) {
 }
 
 function circleScaleSelected(zoomFactor) {
-    var baseAngle = (((2 * Math.PI) * settings.circleFactor) / selected.length);
+    var baseAngle = (((2 * Math.PI) * circleSettings.CircleFactor) / selected.length);
     var width = getWindowWidth();
     var height = getWindowHeight();
     var least = Math.min(width, height);
     var radius = (least / 3) / scale;
     for (var i = 0; i < selected.length; i++) {
         var angle = -baseAngle * i;
-        angle += (2 * Math.PI) * settings.circleOffset;
+        angle += (2 * Math.PI) * circleSettings.CircleOffset;
         angle -= (Math.PI / 2);
         var x = Math.cos(angle);
         var y = Math.sin(angle);
@@ -464,12 +487,12 @@ function inputKey(event) {
     }
 }
 
-function releaseKey(e){
-    switch(e.keyCode){
+function releaseKey(e) {
+    switch (e.keyCode) {
         case KeyBinds.CTRL:
             clearKeys();
             break;
-           }
+    }
 }
 
 var cycleIndex = 0;
@@ -513,6 +536,7 @@ function resetOrientation() {
         x: 0,
         y: 0
     };
+        saveAll();
     shiftElements();
     renderCamera();
     render();
@@ -526,6 +550,14 @@ function deleteSelection() {
     renderAllLines();
 }
 
+function deleteAll() {
+    var keys = Object.keys(data.library);
+    for (var i = 0; i < keys.length; i++) {
+        removeNode(keys[i]);
+    }
+    resetOrientation();
+    renderAllLines();
+}
 var saves = [];
 var currentSave = 0;
 
@@ -536,9 +568,8 @@ function saveState() {
         saves.splice(currentSave + 1);
         saves.push(saveState);
         currentSave = saves.length - 1;
-
-        saveAll();
     }
+    saveAll();
 }
 
 function undo() {
@@ -558,31 +589,32 @@ function loadSave() {
 }
 
 function saveData() {
-    var library = JSON.stringify(data.library);
+    var library = data.library;
     currentGraphSave.library = library;
-    
+
 }
 
 function saveCamera() {
-    var cam = JSON.stringify({
+    var cam = {
         position: data.camera.position,
         scale: scale
-    });
+    };
     currentGraphSave.camera = cam;
 }
 
-function saveCurrentGraph(){
-            var saveJSON = JSON.stringify(currentGraphSave);
-    localStorage.setItem("currentGraphSave",saveJSON);
+function saveCurrentGraph() {
+
+    var saveJSON = JSON.stringify(currentGraphSave);
+    localStorage.setItem("currentGraphSave", saveJSON);
 }
 
-function saveGraphs(){
-            if(currentGraphName!=null&&currentGraphName.length>0){
-            graphSaves[currentGraphName] = currentGraphSave;
-               }
-    
-                var saveJSON = JSON.stringify(graphSaves);
-    localStorage.setItem("graphSaves",saveJSON);
+function saveGraphs() {
+    if (currentGraphName != null && currentGraphName.length > 0) {
+        graphSaves[currentGraphName] = JSON.parse(JSON.stringify(currentGraphSave));
+    }
+
+    var saveJSON = JSON.stringify(graphSaves);
+    localStorage.setItem("graphSaves", saveJSON);
 }
 
 function saveAll() {
@@ -590,10 +622,11 @@ function saveAll() {
     saveCamera();
     saveCurrentGraph();
     saveGraphs();
+    updateSaveOptions();
 }
 
-function storeSave(){
-    
+function storeSave() {
+
 }
 var queueClear = false;
 
@@ -879,60 +912,61 @@ function repositionElements() {
 function load() {
 
     var origin = generateTextNode("origin");
-    
+
+
     currentGraphName = localStorage.getItem("currentGraphName");
     currentGraphSave = JSON.parse(localStorage.getItem("currentGraphSave"));
     graphSaves = JSON.parse(localStorage.getItem("graphSaves"));
-    
-    if(graphSaves==null){
+
+
+    if (graphSaves == null) {
         graphSaves = {};
-       }
-        if(currentGraphName==null){
-        currentGraphName = "";
-       }
-    if(currentGraphSave == null){
-       currentGraphSave = {};
-       }
-    
-    if(currentGraphName!=null){
-    loadGraphName(currentGraphName);
+    }
+    if (currentGraphSave == null) {
+        currentGraphSave = {};
+    }
+
+    if (currentGraphName != null && currentGraphName.length > 0) {
+        updateCurrentGraphName(currentGraphName);
+        loadGraphName(currentGraphName);
+    } else if (currentGraphSave != null) {
+        loadGraphSave(currentGraphSave);
+    }
+
+    updateSaveOptions();
+
 }
-    else if(currentGraphSave!=null){
-            loadGraphSave(currentGraphSave);
-            }
-    
-        updateSaveOptions();
-    
+
+function loadGraphName(graphName) {
+    if (graphSaves != null && graphName != null) {
+
+        var graphSave = graphSaves[graphName];
+        if (graphSave != null) {
+            loadGraphSave(graphSave);
+        }
+    }
+}
+
+function loadGraphSave(graphSave) {
+    if (graphSave != null) {
+        selected = [];
+        var lib = graphSave.library;
+        if (lib != null) {
+            data.library = lib;
+
+        }
+        var cam = graphSave.camera;
+        if (cam != null) {
+            data.camera.position = cam.position;
+            scale = cam.scale;
+        }
+    }
     scaleCamera();
     render();
     shiftElements();
+
 }
 
-function loadGraphName(graphName){
-    if(graphSaves!=null&&graphName!=null){
-       var graphSave = graphSaves[graphName];
-        if(graphSave!=null){
-            localStorage.setItem("currentGraphName",graphName);
-           loadGraphSave(graphSave);
-           }
-       }
-}
-
-function loadGraphSave(graphSave){
-            if(graphSave!=null){
-               var lib = graphSave.library;
-    if (lib != null) {
-        data.library = lib;
-
-    }
-    var cam = graphSave.camera;
-    if (cam != null) {
-        data.camera.position = cam.position;
-        scale = cam.scale;
-    }
-    saveAll();
-           }
-}
 function scaleCamera() {
     camera.style.transform = `scale(${scale})`;
 }
@@ -1381,112 +1415,112 @@ function dragElement(elmnt) {
         pos4 = 0;
     elmnt.onmousedown = dragMouseDown;
 
-    function dragMouseDown(e) {
-        if (keyStates[KeyBinds.MOVE]) {
-            e = e || window.event;
-            //e.preventDefault();
-            document.onmouseup = closeDragElement;
-            document.onmousemove = elementDrag;
-        }
-    }
+}
 
-    function elementDrag(e) {
+function dragMouseDown(e) {
+    if (keyStates[KeyBinds.MOVE]) {
         e = e || window.event;
         //e.preventDefault();
-        var nodes = [];
-        if (selected.length == 0) {
-            var node = getNodeById(elmnt.id);
-            nodes.push(node);
-        } else {
-            for (var i = 0; i < selected.length; i++) {
-                var retrieved = getNodeById(selected[i]);
-                if (retrieved != null) {
-                    nodes.push(retrieved);
-                }
+        document.onmouseup = closeDragElement;
+        document.onmousemove = elementDrag;
+    }
+}
+
+function elementDrag(e) {
+    e = e || window.event;
+    //e.preventDefault();
+    var nodes = [];
+    if (selected.length == 0) {
+        var node = getNodeById(elmnt.id);
+        nodes.push(node);
+    } else {
+        for (var i = 0; i < selected.length; i++) {
+            var retrieved = getNodeById(selected[i]);
+            if (retrieved != null) {
+                nodes.push(retrieved);
             }
         }
-        for (var i = 0; i < nodes.length; i++) {
-            var node = nodes[i];
-            var newPos = {
-                x: node.position.x + (e.movementX / scale),
-                y: node.position.y + (e.movementY / scale)
-            };
-            shiftNode(node, newPos);
-        }
     }
-
-    document.documentElement.onmousedown = bodyDrag;
-
-    function bodyDrag(e) {
-        if (updated) {
-            recreateElements();
-            saveState();
-            updated = false;
-        }
-        if (!keyStates[KeyBinds.MOVE]) {
-            if (getNodeParent(e.path[0]) == null && !isDescendant(e.path[0], tools) || keyStates[KeyBinds.CTRL]) {
-                cameraDragMouseDown(e);
-                e.preventDefault();
-                unfocus();
-            }
-        } else if (selecting || keyStates[KeyBinds.BOXSELECT] || selected.length == 0) {
-            selectDragMouseDown(e);
-        } else if (selected.length > 0 && currentTool == null) {
-            dragMouseDown(e);
-        }
-    }
-
-    function selectDragMouseDown(e) {
-        e.preventDefault();
-        nodeCache = getAllNodes();
-        selecting = true;
-        startSelectPos = {
-            x: e.clientX,
-            y: e.clientY
+    for (var i = 0; i < nodes.length; i++) {
+        var node = nodes[i];
+        var newPos = {
+            x: node.position.x + (e.movementX / scale),
+            y: node.position.y + (e.movementY / scale)
         };
-        document.onmouseup = closeDragElement;
-        document.onmousemove = selectDrag;
+        shiftNode(node, newPos);
     }
+}
 
-    function selectDrag(e) {
-        e.preventDefault();
-        endSelectPos = {
-            x: e.clientX,
-            y: e.clientY
-        };
-        drawSelection();
 
+function bodyDrag(e) {
+    if (updated) {
+        recreateElements();
+        saveState();
+        updated = false;
     }
-
-    function cameraDragMouseDown(e) {
-        var startPos = {
-            x: e.clientX,
-            y: e.clientY
-        };
-        document.onmouseup = closeDragElement;
-        document.onmousemove = function (e) {
-            cameraDrag(e, startPos)
+    if (!keyStates[KeyBinds.MOVE]) {
+        if (getNodeParent(e.path[0]) == null && !isDescendant(e.path[0], tools) || keyStates[KeyBinds.CTRL]) {
+            cameraDragMouseDown(e);
+            e.preventDefault();
+            unfocus();
         }
+    } else if (selecting || keyStates[KeyBinds.BOXSELECT] || selected.length == 0) {
+        selectDragMouseDown(e);
+    } else if (selected.length > 0 && currentTool == null) {
+        dragMouseDown(e);
     }
+}
 
-    function cameraDrag(e, startPos) {
-        var offset = {
-            x: startPos.x - e.clientX,
-            y: startPos.y - e.clientY
-        };
-        if (magnitude(offset) > 20) {
-            queueClear = false;
-        }
-        var deltaX = e.movementX;
-        var deltaY = e.movementY;
+function selectDragMouseDown(e) {
+    e.preventDefault();
+    nodeCache = getAllNodes();
+    selecting = true;
+    startSelectPos = {
+        x: e.clientX,
+        y: e.clientY
+    };
+    document.onmouseup = closeDragElement;
+    document.onmousemove = selectDrag;
+}
 
-        data.camera.position.x -= deltaX / scale;
-        data.camera.position.y -= deltaY / scale;
-        cameraPos.x += deltaX;
-        cameraPos.y += deltaY;
-        unfocus();
-        render();
+function selectDrag(e) {
+    e.preventDefault();
+    endSelectPos = {
+        x: e.clientX,
+        y: e.clientY
+    };
+    drawSelection();
+
+}
+
+function cameraDragMouseDown(e) {
+    var startPos = {
+        x: e.clientX,
+        y: e.clientY
+    };
+    document.onmouseup = closeDragElement;
+    document.onmousemove = function (e) {
+        cameraDrag(e, startPos)
     }
+}
+
+function cameraDrag(e, startPos) {
+    var offset = {
+        x: startPos.x - e.clientX,
+        y: startPos.y - e.clientY
+    };
+    if (magnitude(offset) > 20) {
+        queueClear = false;
+    }
+    var deltaX = e.movementX;
+    var deltaY = e.movementY;
+
+    data.camera.position.x -= deltaX / scale;
+    data.camera.position.y -= deltaY / scale;
+    cameraPos.x += deltaX;
+    cameraPos.y += deltaY;
+    unfocus();
+    render();
 }
 
 function renderGrid() {
@@ -1828,6 +1862,7 @@ function toolItemUp() {
 }
 
 function initializeSettings() {
+    loadSettings();
     var settingElements = document.getElementsByName("option");
     for (var i = 0; i < settingElements.length; i++) {
         var settingElement = settingElements[i];
@@ -1837,6 +1872,7 @@ function initializeSettings() {
                 settingElement.checked = settings[target];
                 settingElement.addEventListener('change', (event) => {
                     settings[event.currentTarget.getAttribute("target")] = event.currentTarget.checked;
+                    saveSettings();
                     render();
                 })
                 break;
@@ -1847,12 +1883,53 @@ function initializeSettings() {
                 settingElement.value = settings[target];
                 settingElement.addEventListener('change', (event) => {
                     settings[event.currentTarget.getAttribute("target")] = event.currentTarget.value;
+                    saveSettings();
                     render();
                 })
                 break;
+        }
+    }
+    defaultOptionsButton.addEventListener('click', (event) => {
+        resetSettings();
+        render();
+    })
+}
+
+function updateSettings() {
+    var settingElements = document.getElementsByName("option");
+    for (var i = 0; i < settingElements.length; i++) {
+        var settingElement = settingElements[i];
+        switch (settingElement.type) {
+            case "checkbox":
+                var target = settingElement.getAttribute("target");
+                settingElement.checked = settings[target];
+                break;
+
+            case "text":
+            case "number":
+                var target = settingElement.getAttribute("target");
+                settingElement.value = settings[target];
                 break;
         }
     }
+}
+
+function resetSettings() {
+    settings = JSON.parse(JSON.stringify(defaultSettings));
+    updateSettings();
+    saveSettings();
+}
+
+function loadSettings() {
+    var parsedSettings = JSON.parse(localStorage.getItem("settings"));
+    if (parsedSettings != null) {
+        settings = parsedSettings;
+    }
+}
+
+function saveSettings() {
+    var settingsJSON = JSON.stringify(settings);
+    localStorage.setItem("settings", settingsJSON);
 }
 
 function initializeProperties() {
@@ -2030,56 +2107,139 @@ function pasteSelected() {
         }
     }
 }
-function initializeSaves(){
-            saveNameField.addEventListener('input', (event) => {
+
+function initializeSaves() {
+    saveNameField.addEventListener('input', (event) => {
         saveFieldChange();
     });
-        saveButton.addEventListener('click', (event) => {
+    saveButton.addEventListener('click', (event) => {
         saveAs();
+        saveFieldChange();
+    });
+    deleteButton.addEventListener('click', (event) => {
+        deleteSave();
+    });
+    saveDrop.addEventListener('change', (event) => {
+        var graphName = event.target.value;
+        updateCurrentGraphName(graphName);
+        loadGraphName(graphName);
+    });
+    importButton.addEventListener('click', (event) => {
+        importFileDialog();
+    });
+    exportButton.addEventListener('click', (event) => {
+        exportFileDialog();
     });
 }
-function saveFieldChange(){
+
+function saveFieldChange() {
     saveName = saveNameField.value;
-    if(graphSaves[saveName]==null){
-       saveButton.className = "greenButton";
-        saveButton.innerHTML = "Save New";
+    if (saveName.length > 0) {
+        if (graphSaves[saveName] == null) {
+            saveButton.className = "toolButton";
+            saveButton.innerHTML = "Save New";
+        } else {
+            if (saveName == currentGraphName) {
+                saveButton.className = "toolButton save";
+                saveButton.innerHTML = "Autosaving";
+            } else {
+                saveButton.className = "toolButton danger";
+                saveButton.innerHTML = "Overwrite";
+            }
+        }
+    } else {
+        saveButton.className = "intangible";
+    }
+}
+
+function saveAs() {
+    saveName = saveNameField.value;
+    if (saveName.length > 0) {
+        updateCurrentGraphName(saveName);
+        saveAll();
+    } else {
+        saveNameField.value = "";
+    }
+}
+
+function updateCurrentGraphName(name) {
+    currentGraphName = name;
+    localStorage.setItem("currentGraphName", currentGraphName);
+    var saveText = document.getElementById("currentSave");
+    saveText.innerHTML = name.length > 0 ? name : "None";
+    saveNameField.value = name;
+    if(currentGraphName!=null&&currentGraphName.length>0){
+                exportButton.className = "toolButton export";
+                    deleteButton.className = "toolButton danger";
        }
     else{
-        if(saveName==currentGraphName){
-                  saveButton.className = "greenButton";
-        saveButton.innerHTML = "Save";
-           }
-        else{
-                           saveButton.className = "greenButton danger";
-        saveButton.innerHTML = "Overwrite";   
-        }
+                    exportButton.className = "intangible";
+                deleteButton.className = "intangible";
     }
+    updateSaveOptions();
+    saveFieldChange();
 }
-function saveAs(){
-    saveName = saveNameField.value;
-    if(saveName.length>0){
-        currentGraphName = saveName;
-        saveAll();
-    }
-    else{
-            saveNameField.value = "";
-    }
-}
-function updateSaveOptions(){
-    var saveDrop = document.getElementById("saveDropDown");
+
+function updateSaveOptions() {
     saveDrop.innerHTML = "";
     var noneOption = document.createElement("OPTION");
-    noneOption.value = "none";
+    noneOption.value = "";
+    noneOption.innerHTML = "Load Save"
     saveDrop.appendChild(noneOption);
-    
-    if(graphSaves!=null){
+
+    if (graphSaves != null) {
         var graphNames = Object.keys(graphSaves);
-       for(var i = 0;i<graphNames.length;i++){
-           var graphName = graphNames[i];
-           var option = document.createElement("OPTION");
-           option.value = graphName;
-           option.innerHTML = graphName;
-           saveDrop.appendChild(option);
-       }
-       }
+        for (var i = 0; i < graphNames.length; i++) {
+            var graphName = graphNames[i];
+            var nodeCount = Object.keys(graphSaves[graphName].library).length;
+            var option = document.createElement("OPTION");
+            option.value = graphName;
+            option.innerHTML = `${graphName} (${nodeCount})`;
+            saveDrop.appendChild(option);
+        }
+    }
+
+    updateExportField();
 }
+
+function updateExportField() {
+    exportField.value = JSON.stringify(currentGraphSave);
+}
+
+function deleteSave() {
+    delete graphSaves[currentGraphName];
+    updateCurrentGraphName("");
+    deleteAll();
+    saveAll();
+}
+
+function importFileDialog() {
+ 
+}
+
+function exportFileDialog() {
+if(currentGraphName.length>0){
+   var fileName = `${currentGraphName}.json`;
+    var fileData = JSON.stringify(currentGraphSave);
+    download(fileName,fileData);
+   }
+}
+ function download(file, text) {
+              
+                //creating an invisible element
+                var element = document.createElement('a');
+                element.setAttribute('href', 
+                'data:text/plain;charset=utf-8, '
+                + encodeURIComponent(text));
+                element.setAttribute('download', file);
+              
+                // Above code is equivalent to
+                // <a href="path of file" download="file name">
+              
+                document.body.appendChild(element);
+              
+                //onClick property
+                element.click();
+              
+                document.body.removeChild(element);
+            }

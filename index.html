@@ -23,12 +23,28 @@
                 </div>
             </div>
             <div id="toolsBody" class="toolsBody">
-                <tab name="save" class="flex" width=45 height=45>
+                <tab name="save" width=45 height=40>
                     <div class="saveGroup">
-                        <p><label>Current Save: </label><i id = "currentSave">None</i></p>
-                        <label>Save As: </label><input placeholder="Graph Name" id="newSaveName" class = "propertyText"><div class="greenButton" id = "saveButton">Save New</div>
-                        <p><label>Load Save: </label>  <select name="saves" id="saveDropDown" class = "propertyText">
-  </select></p>
+                        <p>
+                            <label>Current Save: </label><i id="currentSave">None</i>
+                            <span class="intangible" id="deleteButton">Delete</span>
+                        </p>
+                        <p>
+                            <label>Save As: </label>
+                            <input placeholder="Graph Name" id="newSaveName" class="propertyText">
+                            <span class="invisible" id="saveButton"></span>
+                        </p>
+                        <p>
+                            <select name="saves" id="saveDropDown" class="propertyText animatedDropdown">
+                            </select>
+                        </p>
+                        <p>
+                            <label>Import/Export:</label>
+                            <textarea class="propertyTextArea" id="exportField"></textarea>
+                        </p>
+                        <span class="toolButton import" id="importButton">Import Save</span>
+                        <span class="intangible" id="exportButton">Export Save</span>
+
                     </div>
                 </tab>
                 <tab name="tools" class="flex" width=45 height=45>
@@ -44,30 +60,30 @@
                     <div class="propertiesGroup">
 
                         <property><label>Style: </label><textarea id="propertyStyle" class="propertyTextArea"></textarea>
-                            <div id="stylePropertyApply" class="greenButton">Apply</div>
+                            <p><span id="stylePropertyApply" class="toolButton">Apply</span></p>
                         </property>
                         <property><label>Font Size: </label><input type="number" class="propertyNumber" id="propertyFontSize" value=16 min=4 max=640><label> px</label></property>
                         <property><label>Text Color: </label><input type="color" class="propertyColor" id="propertyFontColor"></property>
                         <property><label>Background Color: </label><input type="color" class="propertyColor" id="propertyBackgroundColor"></property>
+                        <property><label>Text: </label><textarea id="propertyText" class="propertyTextArea"></textarea>
+                            <p><span id="textPropertyApply" class="toolButton">Apply</span></p>
+                        </property>
                     </div>
-                    <property><label>Text: </label><textarea id="propertyText" class="propertyTextArea"></textarea>
-                        <div id="textPropertyApply" class="greenButton">Apply</div>
-                    </property>
                 </tab>
                 <tab name="options" width=45 height=45>
                     <div class="settingsGroup">
                         <setting>
-                            <input type="number" target="gridSize" name="option" value="40" min="20" max="200">
-                            <label> Grid Size</label>
+                            <label>Grid Size: </label>
+                            <input type="number" class="propertyNumber" target="gridSize" name="option" value="40" min="20" max="200">
                         </setting>
                         <setting>
-                            <input type="checkbox" target="grid" name="option">
-                            <label> Grid</label>
+                            <input type="checkbox" class="propertyCheckbox" target="grid" name="option">
+                            <label> Enable Grid</label>
                         </setting>
-
+                        <p><span class="toolButton Danger" id="defaultOptionsButton">Reset To Default</span></p>
                     </div>
                 </tab>
-                <tab name="controls" class="flex" width=60 height=60>
+                <tab name="controls" class="flex" width=60 height=67>
 
 
 
