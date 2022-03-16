@@ -13,12 +13,11 @@
             <div id="toolsHead" class="toolsHead">
                 <span class="card-header toolsTitle">Tools</span>
                 <div class="tabShelf">
-
-                    <tabButton target="save">Save</tabButton>
                     <tabButton target="tools">Tools</tabButton>
                     <tabButton target="properties">Properties</tabButton>
                     <tabButton target="options">Options</tabButton>
                     <tabButton target="controls">Controls</tabButton>
+                    <tabButton target="save">Save</tabButton>
 
                 </div>
             </div>
@@ -35,6 +34,9 @@
                             <span class="invisible" id="saveButton"></span>
                         </p>
                         <p>
+                        <span class="toolButton new" id="newSaveButton">New Graph</span>    
+                        </p>    
+                        <p>
                             <select name="saves" id="saveDropDown" class="propertyText animatedDropdown">
                             </select>
                         </p>
@@ -42,8 +44,8 @@
                             <label>Import/Export:</label>
                             <textarea class="propertyTextArea" id="exportField"></textarea>
                         </p>
-                        <span class="toolButton import" id="importButton">Import Save</span>
-                        <span class="intangible" id="exportButton">Export Save</span>
+                        <span class="toolButton import" id="importButton">Import File<input id="fileImport" type="file" name="name" style="display: none;" /></span>
+                        <span class="intangible" id="exportButton">Export File</span>
 
                     </div>
                 </tab>

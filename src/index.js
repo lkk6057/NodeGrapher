@@ -10,6 +10,7 @@ var saveDrop;
 var exportField;
 var importButton;
 var exportButton;
+var newSaveButton;
 var main;
 var chart;
 var camera;
@@ -123,6 +124,7 @@ function initializeDocument() {
     exportField = document.getElementById("exportField")
     importButton = document.getElementById("importButton");
     exportButton = document.getElementById("exportButton");
+    newSaveButton = document.getElementById("newSaveButton");
     initializeTools();
     initializeToolItems();
     initializeSaves();
@@ -202,7 +204,7 @@ function resizeWindow(e) {
 }
 
 function zoom(event) {
-    if (!nodeFocused() && !toolFocused() && !isDescendant(event.target, tools)) {
+    if (!toolFocused() && !isDescendant(event.target, tools)) {
         var delta = event.deltaY;
         var deltaMag = Math.abs(delta);
         var zoomFactor = 1 - (delta * 0.001);
@@ -536,7 +538,7 @@ function resetOrientation() {
         x: 0,
         y: 0
     };
-        saveAll();
+    saveAll();
     shiftElements();
     renderCamera();
     render();
@@ -780,6 +782,18 @@ function selectElement(element, mode = -1) {
     updateHUD();
 }
 
+function updateAllHighlights() {
+    var nodes = Object.keys(data.library);
+    for (var i = 0; i < nodes.length; i++) {
+        var nodeId = nodes[i];
+        var nodeEle = document.getElementById(nodeId);
+        if (nodeEle != null) {
+            highlightElement(nodeEle);
+        }
+
+    }
+}
+
 function highlightElement(element) {
     if (selected.includes(element.getAttribute("id"))) {
         element.setAttribute("contenteditable", "true");
@@ -949,12 +963,13 @@ function loadGraphName(graphName) {
 
 function loadGraphSave(graphSave) {
     if (graphSave != null) {
-        selected = [];
         var lib = graphSave.library;
         if (lib != null) {
             data.library = lib;
-
+            selected = [];
+            updateAllHighlights();
         }
+
         var cam = graphSave.camera;
         if (cam != null) {
             data.camera.position = cam.position;
@@ -963,6 +978,7 @@ function loadGraphSave(graphSave) {
     }
     scaleCamera();
     render();
+    renderAllLines();
     shiftElements();
 
 }
@@ -1363,7 +1379,6 @@ function closeDragElement() {
     selecting = false;
     if (queueClear) {
         clearSelection();
-        setSelectTarget("");
     }
     queueClear = false;
     drawSelection();
@@ -2130,6 +2145,51 @@ function initializeSaves() {
     exportButton.addEventListener('click', (event) => {
         exportFileDialog();
     });
+    exportField.addEventListener('change', (event) => {
+        importJSONField();
+    });
+    $('#fileImport').on('change', (event) => {
+        const reader = new FileReader()
+        reader.onload = handleFileImport;
+        reader.readAsText(event.target.files[0])
+    });
+    newSaveButton.addEventListener('click', (event) => {
+        clearGraph();
+    });
+}
+
+function importJSONField() {
+    var rawImport = exportField.value;
+    var parsed = JSON.parse(exportField.value);
+    if (parsed != null) {
+        loadGraphSave(parsed);
+    } else {
+        dialog("Invalid JSON", "Error");
+    }
+}
+
+function dialog(text, header = null) {
+    var dialogString = header != null ? `${header}\n${text}` : text;
+    alert(dialogString);
+}
+
+function handleFileImport(event) {
+    if (event.target.result != null) {
+        var parsed = JSON.parse(event.target.result);
+        if (parsed != null) {
+            var filePath = $('#fileImport')[0].value;
+            var fileName = pathToFilename(filePath);
+            updateCurrentGraphName(fileName);
+            exportField.value = event.target.result;
+            importJSONField();
+            saveFieldChange();
+            $('#fileImport')[0].value = "";
+        }
+    }
+}
+
+function pathToFilename(fullPath) {
+    return fullPath.replace(/^.*[\\\/]/, '').split(".")[0];
 }
 
 function saveFieldChange() {
@@ -2168,13 +2228,13 @@ function updateCurrentGraphName(name) {
     var saveText = document.getElementById("currentSave");
     saveText.innerHTML = name.length > 0 ? name : "None";
     saveNameField.value = name;
-    if(currentGraphName!=null&&currentGraphName.length>0){
-                exportButton.className = "toolButton export";
-                    deleteButton.className = "toolButton danger";
-       }
-    else{
-                    exportButton.className = "intangible";
-                deleteButton.className = "intangible";
+    if (currentGraphName != null && currentGraphName.length > 0) {
+        exportButton.className = "toolButton export";
+        deleteButton.className = "toolButton danger";
+
+    } else {
+        exportButton.className = "intangible";
+        deleteButton.className = "intangible";
     }
     updateSaveOptions();
     saveFieldChange();
@@ -2208,38 +2268,43 @@ function updateExportField() {
 
 function deleteSave() {
     delete graphSaves[currentGraphName];
+    clearGraph();
+}
+
+function clearGraph() {
     updateCurrentGraphName("");
     deleteAll();
     saveAll();
 }
 
 function importFileDialog() {
- 
+    $('#fileImport').click();
 }
 
 function exportFileDialog() {
-if(currentGraphName.length>0){
-   var fileName = `${currentGraphName}.json`;
-    var fileData = JSON.stringify(currentGraphSave);
-    download(fileName,fileData);
-   }
+    if (currentGraphName.length > 0) {
+        var fileName = `${currentGraphName}.json`;
+        var fileData = JSON.stringify(currentGraphSave);
+        download(fileName, fileData);
+    }
 }
- function download(file, text) {
-              
-                //creating an invisible element
-                var element = document.createElement('a');
-                element.setAttribute('href', 
-                'data:text/plain;charset=utf-8, '
-                + encodeURIComponent(text));
-                element.setAttribute('download', file);
-              
-                // Above code is equivalent to
-                // <a href="path of file" download="file name">
-              
-                document.body.appendChild(element);
-              
-                //onClick property
-                element.click();
-              
-                document.body.removeChild(element);
-            }
+
+function download(file, text) {
+
+    //creating an invisible element
+    var element = document.createElement('a');
+    element.setAttribute('href',
+        'data:text/plain;charset=utf-8, ' +
+        encodeURIComponent(text));
+    element.setAttribute('download', file);
+
+    // Above code is equivalent to
+    // <a href="path of file" download="file name">
+
+    document.body.appendChild(element);
+
+    //onClick property
+    element.click();
+
+    document.body.removeChild(element);
+}

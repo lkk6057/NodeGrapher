@@ -295,7 +295,9 @@ property {
 .danger {
     background-color: #FF0000;
 }
-
+.new{
+        background-color: skyblue;
+}
 .import {
     background-color: blue;
     display: inline-block;
