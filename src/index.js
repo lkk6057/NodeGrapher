@@ -562,7 +562,10 @@ function deleteAll() {
 }
 var saves = [];
 var currentSave = 0;
-
+function clearSaves(){
+    saves = [];
+    currentSave = 0;
+}
 function saveState() {
     var saveState = JSON.stringify(data.library);
 
@@ -968,6 +971,7 @@ function loadGraphSave(graphSave) {
             data.library = lib;
             selected = [];
             updateAllHighlights();
+            clearSaves();
         }
 
         var cam = graphSave.camera;
