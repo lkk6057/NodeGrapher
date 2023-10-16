@@ -310,6 +310,7 @@ function scaleSelected(zoomFactor) {
 }
 
 function circleScaleSelected(zoomFactor) {
+    console.log(zoomFactor)
     var baseAngle = (((2 * Math.PI) * circleSettings.CircleFactor) / selected.length);
     var width = getWindowWidth();
     var height = getWindowHeight();
@@ -562,10 +563,12 @@ function deleteAll() {
 }
 var saves = [];
 var currentSave = 0;
-function clearSaves(){
+
+function clearSaves() {
     saves = [];
     currentSave = 0;
 }
+
 function saveState() {
     var saveState = JSON.stringify(data.library);
 
@@ -1478,7 +1481,7 @@ function bodyDrag(e) {
         updated = false;
     }
     if (!keyStates[KeyBinds.MOVE]) {
-        if (getNodeParent(e.path[0]) == null && !isDescendant(e.path[0], tools) || keyStates[KeyBinds.CTRL]) {
+        if (getNodeParent(e.composedPath()[0]) == null && !isDescendant(e.composedPath()[0], tools) || keyStates[KeyBinds.CTRL]) {
             cameraDragMouseDown(e);
             e.preventDefault();
             unfocus();
@@ -1577,7 +1580,7 @@ function initializeTools() {
         if (target != null) {
 
             tabButton.onclick = function (e) {
-                clickTab(e.path[0]);
+                clickTab(e.composedPath()[0]);
 
             }
         }
@@ -1668,7 +1671,7 @@ function toolsMouseDown(e) {
     //e.preventDefault();
     var startPos = mousePos;
     document.onmouseup = closeDragElement;
-    if (isDescendant(e.path[0], document.getElementById("toolsHead"), 2) && toolCursorStyle.length == 0) {
+    if (isDescendant(e.composedPath()[0], document.getElementById("toolsHead"), 2) && toolCursorStyle.length == 0) {
         document.onmousemove = function (e) {
             toolsDrag(e, startPos)
         }
